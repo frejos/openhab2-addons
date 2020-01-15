@@ -3,8 +3,8 @@
 	xmlns:binding="https://openhab.org/schemas/binding/v1.0.0"
 	xsi:schemaLocation="https://openhab.org/schemas/binding/v1.0.0 https://openhab.org/schemas/binding-1.0.0.xsd">
 
-	<name>BondHome Binding</name>
-	<description>This is the binding for BondHome.</description>
+	<name>Bond Home Binding</name>
+	<description>This is the binding for the Bond Bridge for Ceiling Fans and and other RF devices.</description>
 	<author>Sara Geleskie Damiano</author>
 
 </binding:binding>
