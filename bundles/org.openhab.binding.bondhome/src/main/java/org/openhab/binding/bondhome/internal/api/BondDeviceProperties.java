@@ -40,10 +40,10 @@ public class BondDeviceProperties {
     // The fan radio frequency
     @Expose(serialize = true, deserialize = true)
     public int freq;
-    // The fan speed
+    // Undocumented
     @Expose(serialize = true, deserialize = true)
     public int bps;
-    // The fan timer value
+    // Undocumented
     @Expose(serialize = true, deserialize = true)
     public int zero_gap;
 }

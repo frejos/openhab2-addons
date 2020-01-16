@@ -10,17 +10,19 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.bondhome.internal;
+package org.openhab.binding.bondhome.internal.config;
 
 /**
- * The {@link BondHomeConfiguration} class contains fields mapping thing configuration parameters.
+ * The {@link BondBridgeConfiguration} class contains fields mapping thing
+ * configuration parameters.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
-public class BondHomeConfiguration {
+public class BondBridgeConfiguration {
 
     /**
-     * Sample configuration parameter. Replace with your own.
+     * Configuration for a Bond Bridge or Device
      */
-    public String config1;
+    public String bondIpAddress;
+    public String localToken;
 }

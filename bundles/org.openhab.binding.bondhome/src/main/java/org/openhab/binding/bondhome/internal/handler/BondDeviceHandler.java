@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.bondhome.internal;
+package org.openhab.binding.bondhome.internal.handler;
 
 import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
@@ -26,19 +26,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link BondHomeHandler} is responsible for handling commands, which are
+ * The {@link BondDeviceHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class BondHomeHandler extends BaseThingHandler {
+public class BondDeviceHandler extends BaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(BondHomeHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(BondDeviceHandler.class);
 
     private @Nullable BondHomeConfiguration config;
 
-    public BondHomeHandler(Thing thing) {
+    public BondDeviceHandler(Thing thing) {
         super(thing);
     }
 

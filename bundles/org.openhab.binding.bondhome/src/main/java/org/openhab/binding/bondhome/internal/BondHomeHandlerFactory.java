@@ -36,19 +36,19 @@ import org.osgi.service.component.annotations.Component;
 @Component(configurationPid = "binding.bondhome", service = ThingHandlerFactory.class)
 public class BondHomeHandlerFactory extends BaseThingHandlerFactory {
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.singleton(THING_TYPE_SAMPLE);
-
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
-        return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
+        return SUPPORTED_THING_TYPES.contains(thingTypeUID);
     }
 
     @Override
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
-        if (THING_TYPE_SAMPLE.equals(thingTypeUID)) {
-            return new BondHomeHandler(thing);
+        if (THING_TYPE_BOND_BRIDGE.equals(thingTypeUID)) {
+            return new BondBridgeHandler(thing);
+        } else {
+            return new BondDeviceHandler(thing);
         }
 
         return null;
