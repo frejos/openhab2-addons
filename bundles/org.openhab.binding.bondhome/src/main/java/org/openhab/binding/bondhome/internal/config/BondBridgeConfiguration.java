@@ -12,17 +12,31 @@
  */
 package org.openhab.binding.bondhome.internal.config;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * The {@link BondBridgeConfiguration} class contains fields mapping thing
  * configuration parameters.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
+@NonNullByDefault
 public class BondBridgeConfiguration {
 
     /**
      * Configuration for a Bond Bridge or Device
      */
-    public String bondIpAddress;
+    public String bondId;
     public String localToken;
+    public @Nullable String ipAddress;
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
 }

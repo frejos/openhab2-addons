@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.bondhome.internal;
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,23 +43,41 @@ public class BondHomeBindingConstants {
     /**
      * The supported thing types.
      */
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream.of(THING_TYPE_BOND_BRIDGE,
-            THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
+    public static final Set<ThingTypeUID> SUPPORTED_DEVICE_TYPES = Stream
+            .of(THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
+            .collect(Collectors.toSet());
+
+    public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_TYPES = Collections.singleton(THING_TYPE_BOND_BRIDGE);
+
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream
+            .of(THING_TYPE_BOND_BRIDGE, THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
             .collect(Collectors.toSet());
 
     /**
      * List of all Channel ids
      */
-    public static final String CHANNEL_UNIT_STATE = "unitState";
-    public static final String CHANNEL_FAN_STATE = "fanState";
+    public static final String CHANNEL_POWER_STATE = "power";
     public static final String CHANNEL_FAN_SPEED = "fanSpeed";
     public static final String CHANNEL_FAN_LIGHT_STATE = "fanLightState";
-    public static final String CHANNEL_FAN_LIGHT_BRIGHTNESS = "fanLightBrightness";
+    public static final String CHANNEL_LIGHT_BRIGHTNESS = "fanLightBrightness";
+    public static final String CHANNEL_FAN_UP_LIGHT_STATE = "fanUpLightState";
+    public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "fanUpLightBrightness";
+    public static final String CHANNEL_FAN_DOWN_LIGHT_STATE = "fanDownLightState";
+    public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "fanDownLightBrightness";
+    public static final String CHANNEL_FLAME = "flame";
+    public static final String CHANNEL_FAN_STATE = "fanState";
+    public static final String CHANNEL_OPEN_CLOSE = "open";
 
     /**
      * Configuration arguments
      */
+    public static final String CONFIG_BOND_ID = "bondId";
+    public static final String CONFIG_DEVICE_ID = "deviceId";
     public static final String CONFIG_IP_ADDRESS = "bondIpAddress";
     public static final String CONFIG_LOCAL_TOKEN = "localToken";
-    public static final String CONFIG_FAN_SPEEDS = "numberSpeeds";
+
+    /**
+     * Constants
+     */
+    public static final int BOND_BPUP_PORT = 30007;
 }

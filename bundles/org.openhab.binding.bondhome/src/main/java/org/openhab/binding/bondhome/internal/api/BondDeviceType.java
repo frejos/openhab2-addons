@@ -13,10 +13,7 @@
 package org.openhab.binding.bondhome.internal.api;
 
 /**
- * This enum represents the possible color modes for WiZ bulbs. The bulbs come
- * in three types - full color with tunable white, tunable white, and dimmable
- * with set white. The full color and tunable white bulbs operate EITHER in
- * color mode OR in tunable white mode.
+ * This enum represents the possible device types
  *
  * @author Sara Geleskie Damiano - Initial contribution
  *

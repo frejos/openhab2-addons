@@ -13,42 +13,48 @@
 package org.openhab.binding.bondhome.internal.api;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * This POJO represents the properties of a Bond device
+ * This POJO represents update datagram sent bu the Bond Push UDP Protocol
  *
  * The incoming JSON looks like this:
  *
- * {"max_speed": 3, "trust_state": false, "addr": "10101", "freq": 434300, "bps": 3000, "zero_gap": 30}
+ * {"B": "ZZBL12345", "t": "devices/aabbccdd/state", "i": "00112233bbeeeeff", "s" :200, "m": 0, "f": 255, "b": {"_": "ab9284ef", "power": 1, "speed": 2}}
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class BondDeviceProperties {
-    // The current properties hash
-    @SerializedName("_")
-    @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
-    // The maximum speed of a fan
+public class BPUPUpdate {
+    // The Bond ID
+    @SerializedName("B")
     @Expose(serialize = true, deserialize = true)
-    public int max_speed;
-    // Whether or not to "trust" that the device state remembered by the bond bridge is
-    // correct for toggle switches
+    public String bondId = "ZZBL12345";
+    // The topic (the path from HTTP URL)
+    @SerializedName("t")
     @Expose(serialize = true, deserialize = true)
-    public boolean trust_state;
-    // The device address
+    public @Nullable String topic;
+    // The request ID
+    @SerializedName("i")
     @Expose(serialize = true, deserialize = true)
-    public int addr;
-    // The fan radio frequency
+    public @Nullable String requestId;
+    // The HTTP status code
+    @SerializedName("s")
     @Expose(serialize = true, deserialize = true)
-    public int freq;
-    // Undocumented
+    public int statusCode;
+    // HTTP method (0=GET, 1=POST, 2=PUT, 3=DELETE, 4=PATCH)
+    @SerializedName("m")
     @Expose(serialize = true, deserialize = true)
-    public int bps;
-    // Undocumented
+    public int method;
+    // flags (Olibra-internal use)
+    @SerializedName("f")
     @Expose(serialize = true, deserialize = true)
-    public int zero_gap;
+    public int flag;
+    // HTTP response body
+    @SerializedName("b")
+    @Expose(serialize = true, deserialize = true)
+    public @Nullable BondDeviceState deviceState;
 }

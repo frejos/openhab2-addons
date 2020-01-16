@@ -14,14 +14,20 @@ package org.openhab.binding.bondhome.internal.handler;
 
 import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.bondhome.internal.config.BondDeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +42,14 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(BondDeviceHandler.class);
 
-    private @Nullable BondHomeConfiguration config;
+    private @Nullable BondDeviceConfiguration config;
+
+    /**
+     * The supported thing types.
+     */
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream.of(
+        THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
+        .collect(Collectors.toSet());
 
     public BondDeviceHandler(Thing thing) {
         super(thing);
@@ -61,7 +74,7 @@ public class BondDeviceHandler extends BaseThingHandler {
     @Override
     public void initialize() {
         // logger.debug("Start initializing!");
-        config = getConfigAs(BondHomeConfiguration.class);
+        config = getConfigAs(BondDeviceConfiguration.class);
 
         // TODO: Initialize the handler.
         // The framework requires you to return from this method quickly. Also, before leaving this method a thing

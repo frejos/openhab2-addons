@@ -23,7 +23,7 @@
 		<config-description-ref uri="bondhome:bonddevice:config" />
 
 		<channels>
-			<channel id="state" typeId="system.power" />
+			<channel id="power" typeId="system.power" />
 			<channel id="fanSpeed" typeId="fanSpeed" />
 			<channel id="fanLightState" typeId="system.power" />
 			<channel id="fanLightBrightness" typeId="system.brightness" />
@@ -45,7 +45,7 @@
 		<config-description-ref uri="bondhome:bonddevice:config" />
 
 		<channels>
-			<channel id="state" typeId="system.power" />
+			<channel id="power" typeId="system.power" />
 			<channel id="flame" typeId="flame" />
 			<channel id="fanState" typeId="system.power" />
 			<channel id="fanSpeed" typeId="fanSpeed" />
@@ -78,7 +78,7 @@
 		<config-description-ref uri="bondhome:bonddevice:config" />
 
 		<channels>
-			<channel id="state" typeId="system.power" />
+			<channel id="power" typeId="system.power" />
 		</channels>
 
 	</thing-type>

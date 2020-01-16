@@ -10,22 +10,25 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.bondhome.internal.config;
+package org.openhab.binding.bondhome.internal.api;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link BondHomeConfiguration} class contains fields mapping thing configuration parameters.
+ * This POJO represents a bond tree node hash state
+ *
+ * The incoming JSON looks like this:
+ *
+ * { "_": "b32ae527" }
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class BondDeviceConfiguration {
-
-    /**
-     * Configuration for a Bond Bridge or Device
-     */
-    public String deviceId;
-    public @Nullable String localToken;
+public class BondHash {
+    // The name associated with the device in the bond app
+    @SerializedName("_")
+    @Expose(serialize = false, deserialize = true)
+    public String hash = "deviceName";
 }

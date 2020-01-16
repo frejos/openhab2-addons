@@ -15,9 +15,10 @@ package org.openhab.binding.bondhome.internal.api;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 /**
- * This POJO represents the "params" returned in a "firstBeat"
+ * This POJO represents the a Bond Device state
  *
  * The incoming JSON looks like this:
  *
@@ -28,6 +29,10 @@ import com.google.gson.annotations.Expose;
  */
 @NonNullByDefault
 public class BondDeviceState {
+    // The current state hash
+    @SerializedName("_")
+    @Expose(serialize = false, deserialize = true)
+    public String hash = "hash";
     // The device power state 1 = on, 0 = off
     @Expose(serialize = true, deserialize = true)
     public int power;

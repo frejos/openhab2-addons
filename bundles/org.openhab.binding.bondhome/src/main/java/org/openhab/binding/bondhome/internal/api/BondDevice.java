@@ -16,18 +16,25 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
 /**
- * This POJO represents the "params" returned in a "firstBeat"
+ * This POJO represents a bond device
  *
  * The incoming JSON looks like this:
  *
- * {"name": "My Fan", "type": "CF", "template": "A1", "location": "Kitchen", "actions": {"_": "7fc1e84b"}, "properties": {"_": "84cd8a43"}, "state": {"_": "ad9bcde4"}, "commands": {"_": "ad9bcde4" }}
+ * {"name": "My Fan", "type": "CF", "template": "A1", "location": "Kitchen",
+ * "actions": {"_": "7fc1e84b"}, "properties": {"_": "84cd8a43"}, "state": {"_":
+ * "ad9bcde4"}, "commands": {"_": "ad9bcde4" }}
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
 public class BondDevice {
+    // The current device hash
+    @SerializedName("_")
+    @Expose(serialize = false, deserialize = true)
+    public String hash = "hash";
     // The name associated with the device in the bond app
     @Expose(serialize = true, deserialize = true)
     public String name = "deviceName";
@@ -37,16 +44,16 @@ public class BondDevice {
     // The remote control template being used
     @Expose(serialize = true, deserialize = true)
     public String template = "template";
-    // The current hash of the actions object
+    // A list of the available actions
     @Expose(serialize = false, deserialize = true)
-    public @Nullable BondActionList actions;
+    public @Nullable String [] actions;
     // The current hash of the properties object
     @Expose(serialize = false, deserialize = true)
-    public @Nullable BondDeviceProperties properties;
+    public @Nullable BondHash properties;
     // The current hash of the state object
     @Expose(serialize = false, deserialize = true)
-    public @Nullable BondDeviceState state;
+    public @Nullable BondHash state;
     // The current hash of the commands object - only applies to a bridge
     @Expose(serialize = false, deserialize = true)
-    public BondCommand commands = "commands";
+    public @Nullable BondHash commands;
 }
