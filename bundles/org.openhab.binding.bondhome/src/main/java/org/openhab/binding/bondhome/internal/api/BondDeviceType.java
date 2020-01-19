@@ -12,6 +12,12 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
+
+import com.google.gson.annotations.SerializedName;
+
 /**
  * This enum represents the possible device types
  *
@@ -19,15 +25,19 @@ package org.openhab.binding.bondhome.internal.api;
  *
  */
 public enum BondDeviceType {
-    ceilingFan("CF"),
-    fireplace("FP"),
-    motorizedShades("MS"),
-    genericDevice("GX");
+    @SerializedName("CF")
+    ceilingFan(THING_TYPE_BOND_FAN),
+    @SerializedName("MS")
+    fireplace(THING_TYPE_BOND_SHADES),
+    @SerializedName("FP")
+    motorizedShades(THING_TYPE_BOND_FIREPLACE),
+    @SerializedName("GX")
+    genericDevice(THING_TYPE_BOND_GENERIC);
 
-    private String deviceType;
+    private ThingTypeUID deviceTypeUid;
 
-    private BondDeviceType(final String deviceType) {
-        this.deviceType = deviceType;
+    private BondDeviceType(final ThingTypeUID deviceTypeUid) {
+        this.deviceTypeUid = deviceTypeUid;
     }
 
     /**
@@ -35,7 +45,7 @@ public enum BondDeviceType {
      *
      * @return the deviceType name
      */
-    public String getDeviceType() {
-        return deviceType;
+    public ThingTypeUID getThingTypeUID() {
+        return deviceTypeUid;
     }
 }

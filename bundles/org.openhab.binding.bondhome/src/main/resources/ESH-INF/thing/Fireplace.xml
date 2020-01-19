@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="bondhome"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<!-- A Fireplace Thing -->
+	<thing-type id="bondFirePlace">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="bondBridge" />
+		</supported-bridge-type-refs>
+
+		<label>Bond Home Fireplace</label>
+		<description>An RF or IR remote controlled fireplace with or without a fan</description>
+
+		<channels>
+			<channel id="power" typeId="system.power" />
+			<channel id="flame" typeId="flame" />
+		</channels>
+
+		<representation-property>deviceId</representation-property>
+
+		<config-description-ref uri="bondhome:bonddevice:config" />
+
+	</thing-type>
+
+	<!-- Channel Types -->
+	<channel-type id="flame">
+		<item-type>Dimmer</item-type>
+		<label>Flame Level</label>
+		<description>Flame level</description>
+	</channel-type>
+
+</thing:thing-descriptions>

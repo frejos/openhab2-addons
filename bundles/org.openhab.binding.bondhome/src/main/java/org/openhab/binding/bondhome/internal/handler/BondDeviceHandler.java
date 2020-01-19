@@ -14,19 +14,30 @@ package org.openhab.binding.bondhome.internal.handler;
 
 import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.bondhome.internal.api.BondDevice;
+import org.openhab.binding.bondhome.internal.api.BondDeviceAction;
+import org.openhab.binding.bondhome.internal.api.BondDeviceProperties;
+import org.openhab.binding.bondhome.internal.api.BondDeviceState;
+import org.openhab.binding.bondhome.internal.api.BondHttpApi;
 import org.openhab.binding.bondhome.internal.config.BondDeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,70 +53,187 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(BondDeviceHandler.class);
 
-    private @Nullable BondDeviceConfiguration config;
+    private @NonNullByDefault({}) BondDeviceConfiguration config;
+    private @Nullable BondHttpApi api;
+
+    private @Nullable BondDevice deviceInfo;
+    private @Nullable BondDeviceProperties deviceProperties;
+    private @Nullable BondDeviceState deviceState;
 
     /**
      * The supported thing types.
      */
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream.of(
-        THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
-        .collect(Collectors.toSet());
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream
+            .of(THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
+            .collect(Collectors.toSet());
 
     public BondDeviceHandler(Thing thing) {
         super(thing);
+        logger.trace("Created handler for bond device.");
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (CHANNEL_1.equals(channelUID.getId())) {
+        BondHttpApi api = this.api;
+        if (api == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
+            return;
+        } else {
+
             if (command instanceof RefreshType) {
-                // TODO: handle data refresh
+                try {
+                    deviceState = api.getDeviceState(config.deviceId);
+                    updateChannelsFromState(deviceState);
+                } catch (IOException e) {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                }
+                return;
             }
 
-            // TODO: handle command
-
-            // Note: if communication with thing fails for some reason,
-            // indicate that by setting the status with detail information:
-            // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-            // "Could not control device at IP address x.x.x.x");
+            switch (channelUID.getId()) {
+                case CHANNEL_POWER_STATE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.TurnOn : BondDeviceAction.TurnOff, null);
+                    break;
+                case CHANNEL_FAN_SPEED:
+                case CHANNEL_FAN_BREEZE_STATE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.BreezeOn : BondDeviceAction.BreezeOff, null);
+                    break;
+                case CHANNEL_FAN_BREEZE_MEAN:
+                case CHANNEL_FAN_BREEZE_VAR:
+                case CHANNEL_FAN_DIRECTION:
+                    api.executeDeviceAction(config.deviceId, BondDeviceAction.SetDirection,
+                            command == OnOffType.ON ? 1 : -1);
+                    break;
+                case CHANNEL_FAN_LIGHT_STATE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.TurnLightOn : BondDeviceAction.TurnLightOff,
+                            null);
+                    break;
+                case CHANNEL_LIGHT_BRIGHTNESS:
+                case CHANNEL_FAN_UP_LIGHT_STATE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.TurnUpLightOn : BondDeviceAction.TurnUpLightOff,
+                            null);
+                    break;
+                case CHANNEL_UP_LIGHT_BRIGHTNESS:
+                case CHANNEL_FAN_DOWN_LIGHT_STATE:
+                    api.executeDeviceAction(config.deviceId, command == OnOffType.ON ? BondDeviceAction.TurnDownLightOn
+                            : BondDeviceAction.TurnDownLightOff, null);
+                    break;
+                case CHANNEL_DOWN_LIGHT_BRIGHTNESS:
+                case CHANNEL_FLAME:
+                case CHANNEL_FP_FAN_STATE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.TurnFpFanOn : BondDeviceAction.TurnFpFanOff,
+                            null);
+                    break;
+                case CHANNEL_FP_FAN_SPEED:
+                case CHANNEL_OPEN_CLOSE:
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.Open : BondDeviceAction.Close, null);
+                    break;
+                default:
+                    return;
+            }
         }
     }
 
     @Override
     public void initialize() {
-        // logger.debug("Start initializing!");
+        logger.debug("Starting initialization for Bond device!");
         config = getConfigAs(BondDeviceConfiguration.class);
 
-        // TODO: Initialize the handler.
-        // The framework requires you to return from this method quickly. Also, before leaving this method a thing
-        // status from one of ONLINE, OFFLINE or UNKNOWN must be set. This might already be the real thing status in
-        // case you can decide it directly.
-        // In case you can not decide the thing status directly (e.g. for long running connection handshake using WAN
-        // access or similar) you should set status UNKNOWN here and then decide the real status asynchronously in the
-        // background.
-
-        // set the thing status to UNKNOWN temporarily and let the background task decide for the real status.
-        // the framework is then able to reuse the resources from the thing handler initialization.
-        // we set this upfront to reliably check status updates in unit tests.
+        // set the thing status to UNKNOWN temporarily
         updateStatus(ThingStatus.UNKNOWN);
 
         // Example for background initialization:
         scheduler.execute(() -> {
-            boolean thingReachable = true; // <background task with long running initialization here>
-            // when done do:
-            if (thingReachable) {
-                updateStatus(ThingStatus.ONLINE);
+            Bridge myBridge = this.getBridge();
+            if (myBridge == null) {
+
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "No Bond bridge is associated with this Bond device");
+                logger.error("No Bond bridge is associated with this Bond device - cannot create device!");
+
+                return;
             } else {
-                updateStatus(ThingStatus.OFFLINE);
+                BondBridgeHandler myBridgeHandler = (BondBridgeHandler) myBridge.getHandler();
+                if (myBridgeHandler != null) {
+                    this.api = myBridgeHandler.getBridgeAPI();
+                    initializeThing();
+                    logger.debug("Finished initializing!");
+                } else {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                            "Cannot access API for Bridge associated with this Bond device");
+                    logger.error("Cannot access API for Bridge associated with this Bond device!");
+                }
             }
         });
-
-        // logger.debug("Finished initializing!");
-
-        // Note: When initialization can NOT be done set the status with more details for further
-        // analysis. See also class ThingStatusDetail for all available status details.
-        // Add a description to give user information to understand why thing does not work as expected. E.g.
-        // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-        // "Can not access device as username and/or password are invalid");
     }
+
+    private void initializeThing() {
+        BondHttpApi api = this.api;
+        if (api != null) {
+            try {
+                logger.trace("Getting device information for {}", config.deviceId);
+                deviceInfo = api.getDevice(config.deviceId);
+                logger.trace("Getting device properties for {}", config.deviceId);
+                deviceProperties = api.getDeviceProperties(config.deviceId);
+                logger.trace("Getting device state for {}", config.deviceId);
+                deviceState = api.getDeviceState(config.deviceId);
+            } catch (IOException e) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+            }
+        }
+
+        BondDevice devInfo = this.deviceInfo;
+        BondDeviceProperties devProperties = this.deviceProperties;
+        BondDeviceState devState = this.deviceState;
+
+        // Update all the thing properties based on the result
+        Map<String, String> thingProperties = new HashMap<String, String>();
+        if (devInfo != null) {
+            logger.trace("Updating device name to {}", devInfo.name);
+            thingProperties.put(PROPERTIES_DEVICE_NAME, devInfo.name);
+        }
+        if (devProperties != null) {
+            logger.trace("Updating other device properties for {}", config.deviceId);
+            thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.max_speed));
+            thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trust_state));
+            thingProperties.put(PROPERTIES_ADDRESS, String.valueOf(devProperties.addr));
+            thingProperties.put(PROPERTIES_RF_FREQUENCY, String.valueOf(devProperties.freq));
+        }
+        logger.trace("Saving properties for {}", config.deviceId);
+        updateProperties(thingProperties);
+
+        // Create channels based on the available actions
+        if (devInfo != null) {
+            logger.trace("Creating channels based on available actions for {}", config.deviceId);
+            createChannelsFromActions(devInfo.actions);
+        }
+
+        // Update all channels with current states
+        if (devState != null) {
+            logger.trace("Updateing channels with current states for {}", config.deviceId);
+            updateChannelsFromState(devState);
+        }
+
+        // Now we're online!
+        updateStatus(ThingStatus.ONLINE);
+    }
+
+    private void createChannelsFromActions(BondDeviceAction[] actions) {
+        // TODO
+    }
+
+    public String getDeviceId() {
+        return config.deviceId;
+    }
+
+    public void updateChannelsFromState(@Nullable BondDeviceState updateState) {
+        // TODO
+    }
+
 }

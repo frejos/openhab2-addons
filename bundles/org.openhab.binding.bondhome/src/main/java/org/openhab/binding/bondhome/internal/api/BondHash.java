@@ -13,6 +13,7 @@
 package org.openhab.binding.bondhome.internal.api;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -30,5 +31,5 @@ public class BondHash {
     // The name associated with the device in the bond app
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "deviceName";
+    public String hash = "hash";
 }

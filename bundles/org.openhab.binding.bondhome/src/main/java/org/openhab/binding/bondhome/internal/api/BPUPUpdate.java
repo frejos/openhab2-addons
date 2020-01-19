@@ -23,7 +23,8 @@ import com.google.gson.annotations.SerializedName;
  *
  * The incoming JSON looks like this:
  *
- * {"B": "ZZBL12345", "t": "devices/aabbccdd/state", "i": "00112233bbeeeeff", "s" :200, "m": 0, "f": 255, "b": {"_": "ab9284ef", "power": 1, "speed": 2}}
+ * {"B": "ZZBL12345", "t": "devices/aabbccdd/state", "i": "00112233bbeeeeff", "s" :200, "m": 0, "f": 255, "b": {"_":
+ * "ab9284ef", "power": 1, "speed": 2}}
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */

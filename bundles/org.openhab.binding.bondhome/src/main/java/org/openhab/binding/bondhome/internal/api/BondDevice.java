@@ -40,13 +40,13 @@ public class BondDevice {
     public String name = "deviceName";
     // The device type
     @Expose(serialize = true, deserialize = true)
-    public BondDeviceType type;
+    public BondDeviceType type = BondDeviceType.genericDevice;
     // The remote control template being used
     @Expose(serialize = true, deserialize = true)
     public String template = "template";
     // A list of the available actions
     @Expose(serialize = false, deserialize = true)
-    public @Nullable String [] actions;
+    public BondDeviceAction[] actions = { BondDeviceAction.TurnOn };
     // The current hash of the properties object
     @Expose(serialize = false, deserialize = true)
     public @Nullable BondHash properties;

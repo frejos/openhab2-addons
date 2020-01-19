@@ -26,6 +26,6 @@ public class BondDeviceConfiguration {
     /**
      * Configuration for a Bond Bridge or Device
      */
-    public String deviceId;
-    public @Nullable String localToken;
+    public String deviceId = "deviceId";
+    public @Nullable String localToken = "localToken";
 }

@@ -49,15 +49,15 @@ public class BondHomeBindingConstants {
 
     public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_TYPES = Collections.singleton(THING_TYPE_BOND_BRIDGE);
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream
-            .of(THING_TYPE_BOND_BRIDGE, THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
-            .collect(Collectors.toSet());
-
     /**
      * List of all Channel ids
      */
     public static final String CHANNEL_POWER_STATE = "power";
     public static final String CHANNEL_FAN_SPEED = "fanSpeed";
+    public static final String CHANNEL_FAN_BREEZE_STATE = "breezeState";
+    public static final String CHANNEL_FAN_BREEZE_MEAN = "breezeMean";
+    public static final String CHANNEL_FAN_BREEZE_VAR = "breezeVariability";
+    public static final String CHANNEL_FAN_DIRECTION = "direction";
     public static final String CHANNEL_FAN_LIGHT_STATE = "fanLightState";
     public static final String CHANNEL_LIGHT_BRIGHTNESS = "fanLightBrightness";
     public static final String CHANNEL_FAN_UP_LIGHT_STATE = "fanUpLightState";
@@ -65,7 +65,8 @@ public class BondHomeBindingConstants {
     public static final String CHANNEL_FAN_DOWN_LIGHT_STATE = "fanDownLightState";
     public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "fanDownLightBrightness";
     public static final String CHANNEL_FLAME = "flame";
-    public static final String CHANNEL_FAN_STATE = "fanState";
+    public static final String CHANNEL_FP_FAN_STATE = "fpFanState";
+    public static final String CHANNEL_FP_FAN_SPEED = "fpFanSpeed";
     public static final String CHANNEL_OPEN_CLOSE = "open";
 
     /**
@@ -77,7 +78,20 @@ public class BondHomeBindingConstants {
     public static final String CONFIG_LOCAL_TOKEN = "localToken";
 
     /**
+     * Device Properties
+     */
+    public static final String PROPERTIES_DEVICE_NAME = "deviceName";
+    public static final String PROPERTIES_MAX_SPEED = "max_speed";
+    public static final String PROPERTIES_TRUST_STATE = "trust_state";
+    public static final String PROPERTIES_ADDRESS = "addr";
+    public static final String PROPERTIES_RF_FREQUENCY = "freq";
+
+    /**
      * Constants
      */
     public static final int BOND_BPUP_PORT = 30007;
+    public static final int BOND_API_TIMEOUT_MS = 3000;
+    public static final String API_ERR_HTTP_401_UNAUTHORIZED = "You need authentication credentials to continue";
+    public static final String API_ERR_HTTP_404_NOTFOUND = "Resource not found";
+    public static final String API_ERR_HTTP_500_SERVERERR = "Something unexpected happened";
 }

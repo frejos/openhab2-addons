@@ -27,16 +27,16 @@ public class BondBridgeConfiguration {
     /**
      * Configuration for a Bond Bridge or Device
      */
-    public String bondId;
-    public String localToken;
-    public @Nullable String ipAddress;
+    public String bondId = "bondId";
+    public String localToken = "localToken";
+    public @Nullable String bondIpAddress;
 
-    public String getIpAddress() {
-        return ipAddress;
+    public @Nullable String getIpAddress() {
+        return bondIpAddress;
     }
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
+    public void setIpAddress(String bondIpAddress) {
+        this.bondIpAddress = bondIpAddress;
     }
 
 }
