@@ -53,12 +53,12 @@ public enum BondDeviceAction {
     // speed: (integer) value from 1 to max_speed. If power=0, speed represents the last speed setting and the speed to
     // which the device resumes when user asks to turn on.
     // Actions
-    SetSpeed("SetSpeed", CHANNEL_FAN_SPEED, "Fan Speed", "Number"),
+    SetSpeed("SetSpeed", CHANNEL_FAN_SPEED, "Speed", "Number"),
     // ^^ Set speed and turn on. If speed>max_speed, max_speed is assumed. If the fan is off, implicitly turn on the
     // power. Setting speed to zero or a negative value is ignored.
-    IncreaseSpeed("IncreaseSpeed", CHANNEL_FAN_SPEED, "Fan Speed", "Number"),
+    IncreaseSpeed("IncreaseSpeed", CHANNEL_FAN_SPEED, "Speed", "Number"),
     // ^^ Increase speed of fan by specified number of speeds. If the fan is off, implicitly turn on the power.
-    DecreaseSpeed("DecreaseSpeed", CHANNEL_FAN_SPEED, "Fan Speed", "Number"),
+    DecreaseSpeed("DecreaseSpeed", CHANNEL_FAN_SPEED, "Speed", "Number"),
     // ^^ Decrease fan speed by specified number of speeds. If attempting to decrease fan speed below 1, the fan will
     // remain at speed 1. That is, power will not be implicitly turned off. If the power is already off, DecreaseSpeed
     // is ignored.
@@ -69,30 +69,30 @@ public enum BondDeviceAction {
     // mean: (integer) sets the average speed. 0 = minimum average speed (calm), 100 = maximum average speed (storm)
     // var: (integer) sets the variability of the speed. 0 = minimum variation (steady), 100 = maximum variation (gusty)
     // Actions
-    BreezeOn("BreezeOn", CHANNEL_FAN_BREEZE_STATE, "Breeze State", "Switch"),
+    BreezeOn("BreezeOn", CHANNEL_FAN_BREEZE_STATE, "Breeze", "Switch"),
     // ^^ Enable breeze with remembered parameters. Defaults to [50,50].
-    BreezeOff("BreezeOff", CHANNEL_FAN_BREEZE_STATE, "Breeze State", "Switch"),
+    BreezeOff("BreezeOff", CHANNEL_FAN_BREEZE_STATE, "Breeze", "Switch"),
     // ^^ Stop breeze. Fan remains on at current speed.
-    SetBreeze("SetBreeze", CHANNEL_FAN_BREEZE_MEAN, "Mean Breeze Speed", "Number"),
+    SetBreeze("SetBreeze", CHANNEL_FAN_BREEZE_MEAN, "Breeze Average Speed", "Dimmer"),
     // ^^ Enable breeze with specified parameters (same as breeze state variable). Example SetBreeze([1, 20, 90]).
 
     // State Variables
     // direction: (integer) 1 = forward, -1 = reverse.
     // The forward and reverse modes are sometimes called Summer and Winter, respectively.
     // Actions
-    SetDirection("SetDirection", CHANNEL_FAN_DIRECTION, "Fan Direction", "Switch"),
+    SetDirection("SetDirection", CHANNEL_FAN_DIRECTION, "Direction", "Switch"),
     // ^^ Control forward and reverse.
-    ToggleDirection("ToggleDirection", CHANNEL_FAN_DIRECTION, "Fan Direction", "Switch"),
+    ToggleDirection("ToggleDirection", CHANNEL_FAN_DIRECTION, "Direction", "Switch"),
     // ^^ Reverse the direction of the fan.
 
     // State Variables
     // light: (integer) 1 = light on, 0 = light off
     // Actions
-    TurnLightOn("TurnLightOn", CHANNEL_FAN_LIGHT_STATE, "Fan Light", "Switch"),
+    TurnLightOn("TurnLightOn", CHANNEL_FAN_LIGHT_STATE, "Light", "Switch"),
     // ^^ Turn light on.
-    TurnLightOff("TurnLightOff", CHANNEL_FAN_LIGHT_STATE, "Fan Light", "Switch"),
+    TurnLightOff("TurnLightOff", CHANNEL_FAN_LIGHT_STATE, "Light", "Switch"),
     // ^^ Turn off light.
-    ToggleLight("ToggleLight", CHANNEL_FAN_LIGHT_STATE, "Fan Light", "Switch"),
+    ToggleLight("ToggleLight", CHANNEL_FAN_LIGHT_STATE, "Light", "Switch"),
     // ^^ Change light from on to off, or off to on.
 
     // State Variables
@@ -102,17 +102,17 @@ public enum BondDeviceAction {
     // Note that both up_light and down_light may not be simultaneously zero, so that the device is always ready to
     // respond to a TurnLightOn request.
     // Actions
-    TurnUpLightOn("TurnUpLightOn", CHANNEL_FAN_UP_LIGHT_STATE, "Fan Up Light", "Switch"),
+    TurnUpLightOn("TurnUpLightOn", CHANNEL_FAN_UP_LIGHT_STATE, "Up Light", "Switch"),
     // ^^ Turn up light on.
-    TurnDownLightOn("TurnDownLightOn", CHANNEL_FAN_DOWN_LIGHT_STATE, "Fan Down Light", "Switch"),
+    TurnDownLightOn("TurnDownLightOn", CHANNEL_FAN_DOWN_LIGHT_STATE, "Down Light", "Switch"),
     // ^^ Turn down light on.
-    TurnUpLightOff("TurnUpLightOff", CHANNEL_FAN_UP_LIGHT_STATE, "Fan Up Light", "Switch"),
+    TurnUpLightOff("TurnUpLightOff", CHANNEL_FAN_UP_LIGHT_STATE, "Up Light", "Switch"),
     // ^^ Turn off up light.
-    TurnDownLightOff("TurnDownLightOff", CHANNEL_FAN_DOWN_LIGHT_STATE, "Fan Down Light", "Switch"),
+    TurnDownLightOff("TurnDownLightOff", CHANNEL_FAN_DOWN_LIGHT_STATE, "Down Light", "Switch"),
     // ^^ Turn off down light.
-    ToggleUpLight("ToggleUpLight", CHANNEL_FAN_UP_LIGHT_STATE, "Fan Up Light", "Switch"),
+    ToggleUpLight("ToggleUpLight", CHANNEL_FAN_UP_LIGHT_STATE, "Up Light", "Switch"),
     // ^^ Change up light from on to off, or off to on.
-    ToggleDownLight("ToggleDownLight", CHANNEL_FAN_DOWN_LIGHT_STATE, "Fan Down Light", "Switch"),
+    ToggleDownLight("ToggleDownLight", CHANNEL_FAN_DOWN_LIGHT_STATE, "Down Light", "Switch"),
     // ^^ Change down light from on to off, or off to on.
 
     // State Variables
@@ -120,11 +120,11 @@ public enum BondDeviceAction {
     // brightness setting and the brightness to resume when user turns on light. If fan has no dimmer or a non-stateful
     // dimmer, brightness is always 100.
     // Actions
-    SetBrightness("SetBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Fan Light Brightness", "Dimmer"),
+    SetBrightness("SetBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Light Brightness", "Dimmer"),
     // ^^ Set the brightness of the light to specified percentage. Value of 0 is ignored, use TurnLightOff instead.
-    IncreaseBrightness("IncreaseBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Fan Light Brightness", "Dimmer"),
+    IncreaseBrightness("IncreaseBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Light Brightness", "Dimmer"),
     // ^^ Increase brightness of light by specified percentage. If light is off, it will be turned on at (0 + amount).
-    DecreaseBrightness("DecreaseBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Fan Light Brightness", "Dimmer"),
+    DecreaseBrightness("DecreaseBrightness", CHANNEL_LIGHT_BRIGHTNESS, "Light Brightness", "Dimmer"),
     // ^^ Decrease light brightness by specified percentage. If attempting to decrease brightness below 1%, light will
     // remain at 1%. Use TurnLightOff to turn off the light. If the light is off, the light will remain off but the
     // remembered brightness will be decreased.
@@ -133,22 +133,22 @@ public enum BondDeviceAction {
     // up_light_brightness: (integer) percentage value of up light brightness, 1-100.
     // down_light_brightness: (integer) percentage value of down light brightness, 1-100.
     // Actions
-    SetUpLightBrightness("SetUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Fan Up Light Brightness", "Dimmer"),
+    SetUpLightBrightness("SetUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Up Light Brightness", "Dimmer"),
     // ^^ Similar to SetBrightness but only for the up light.
-    SetDownLightBrightness("SetDownLightBrightness", CHANNEL_DOWN_LIGHT_BRIGHTNESS, "Fan Down Light Brightness",
+    SetDownLightBrightness("SetDownLightBrightness", CHANNEL_DOWN_LIGHT_BRIGHTNESS, "Down Light Brightness",
             "Dimmer"),
     // ^^ Similar to SetBrightness but only for the down light.
-    IncreaseUpLightBrightness("IncreaseUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Fan Up Light Brightness",
+    IncreaseUpLightBrightness("IncreaseUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Up Light Brightness",
             "Dimmer"),
     // ^^ Similar to IncreaseBrightness but only for the up light.
     IncreaseDownLightBrightness("IncreaseDownLightBrightness", CHANNEL_DOWN_LIGHT_BRIGHTNESS,
-            "Fan Down Light Brightness", "Dimmer"),
+            "Down Light Brightness", "Dimmer"),
     // ^^ Similar to IncreaseBrightness but only for the down light.
-    DecreaseUpLightBrightness("DecreaseUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Fan Up Light Brightness",
+    DecreaseUpLightBrightness("DecreaseUpLightBrightness", CHANNEL_UP_LIGHT_BRIGHTNESS, "Up Light Brightness",
             "Dimmer"),
     // ^^ Similar to DecreaseBrightness but only for the up light.
     DecreaseDownLightBrightness("DecreaseDownLightBrightness", CHANNEL_DOWN_LIGHT_BRIGHTNESS,
-            "Fan Down Light Brightness", "Dimmer"),
+            "Down Light Brightness", "Dimmer"),
     // ^^ Similar to DecreaseBrightness but only for the down light.
 
     // State Variables
@@ -195,16 +195,16 @@ public enum BondDeviceAction {
     // "stop transmitting" action
     Pair("Pair", "", "", ""),
     // ^^ Used in devices that need to be paired with a receiver.
-    StartDimmer("StartDimmer", CHANNEL_LIGHT_UNIDIRECTIONAL, "Fan Light Brightness", "Switch"),
+    StartDimmer("StartDimmer", CHANNEL_LIGHT_UNIDIRECTIONAL, "Light Brightness", "Switch"),
     // ^^ Start dimming. The Bond should time out its transmission after 30 seconds, or when the Stop action is called.
-    StartUpLightDimmer("StartUpLightDimmer", CHANNEL_UP_LIGHT_UNIDIRECTIONAL, "Fan Up Light Brightness", "Switch"),
+    StartUpLightDimmer("StartUpLightDimmer", CHANNEL_UP_LIGHT_UNIDIRECTIONAL, "Up Light Brightness", "Switch"),
     // ^^ Use this and the StartDownLightDimmer instead of StartDimmer if your device has two dimmable lights.
-    StartDownLightDimmer("StartDownLightDimmer", CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL, "Fan Down Light Brightness",
+    StartDownLightDimmer("StartDownLightDimmer", CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL, "Down Light Brightness",
             "Switch"),
     // ^^ The counterpart to StartUpLightDimmer
-    StartIncreasingBrightness("StartIncreasingBrightness", CHANNEL_LIGHT_BIDIRECTIONAL, "Fan Light Brightness",
+    StartIncreasingBrightness("StartIncreasingBrightness", CHANNEL_LIGHT_BIDIRECTIONAL, "Light Brightness",
             "Switch"),
-    StartDecreasingBrightness("StartDecreasingBrightness", CHANNEL_LIGHT_BIDIRECTIONAL, "Fan Light Brightness",
+    StartDecreasingBrightness("StartDecreasingBrightness", CHANNEL_LIGHT_BIDIRECTIONAL, "Light Brightness",
             "Switch");
 
     private String actionId;

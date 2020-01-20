@@ -125,22 +125,24 @@ public class BondBridgeHandler extends BaseBridgeHandler {
             thingProperties.put(PROPERTY_MODEL_ID, myVersion.model);
             thingProperties.put(PROPERTY_FIRMWARE_VERSION, myVersion.fw_ver);
             updateProperties(thingProperties);
+            updateStatus(ThingStatus.ONLINE);
+        } else {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    "Unable get Bond bridge version via API");
         }
-
-        // Start the BPUP update service
-        startUDPListenerJob();
     }
 
     @Override
     public void dispose() {
         logger.trace("Disposing Bond Bridge handler");
+        // The listener should already have been stopped when the last child was disposed,
+        // but we'll call the stop here for good measure.
         stopUDPListenerJob();
     }
 
     private synchronized void startUDPListenerJob() {
         logger.debug("Scheduled listener job to start in 5 seconds");
         listenerJob = bondScheduler.schedule(udpListener, 5, TimeUnit.SECONDS);
-        updateStatus(ThingStatus.ONLINE);
     }
 
     private synchronized void stopUDPListenerJob() {
@@ -159,6 +161,10 @@ public class BondBridgeHandler extends BaseBridgeHandler {
         if (childHandler instanceof BondDeviceHandler) {
             BondDeviceHandler handler = (BondDeviceHandler) childHandler;
             synchronized (handlers) {
+                if (handlers.isEmpty()) {
+                    // Start the BPUP update service after the first child device is added
+                    startUDPListenerJob();
+                }
                 if (!handlers.contains(handler)) {
                     handlers.add(handler);
                 }
@@ -173,6 +179,10 @@ public class BondBridgeHandler extends BaseBridgeHandler {
             synchronized (handlers) {
                 if (handlers.contains(handler)) {
                     handlers.remove(handler);
+                }
+                if (handlers.isEmpty()) {
+                    // Stop the update service when the last child is removed
+                    stopUDPListenerJob();
                 }
             }
         }

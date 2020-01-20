@@ -39,7 +39,9 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.eclipse.smarthome.core.thing.binding.builder.ChannelBuilder;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
+import org.eclipse.smarthome.core.thing.type.ChannelKind;
 import org.eclipse.smarthome.core.thing.type.ChannelType;
 import org.eclipse.smarthome.core.thing.type.ChannelTypeBuilder;
 import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
@@ -56,6 +58,8 @@ import org.openhab.binding.bondhome.internal.api.BondHttpApi;
 import org.openhab.binding.bondhome.internal.config.BondDeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.net.URI;
+
 
 /**
  * The {@link BondDeviceHandler} is responsible for handling commands, which are
@@ -359,7 +363,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         // Update all channels with current states
         if (devState != null) {
-            logger.trace("Updateing channels with current states for {}", config.deviceId);
+            logger.trace("Updating channels with current states for {}", config.deviceId);
             updateChannelsFromState(devState);
         }
 
@@ -379,6 +383,8 @@ public class BondDeviceHandler extends BaseThingHandler {
 
             if (channelIds.contains(action.getChannelId())) {
                 logger.trace("Channel already existed for thing, ignoring");
+            } else if (action.getChannelId() == "") {
+                logger.trace("No channel is associated with this action, ignoring");
             } else {
 
                 // Special set up for the fan speed channel
@@ -395,17 +401,37 @@ public class BondDeviceHandler extends BaseThingHandler {
                                 .withPattern("%d").withReadOnly(false).build();
                     }
                     StateDescription state = stateFragment.toStateDescription();
-                    ChannelType channelType = ChannelTypeBuilder.state(channelTypeUID, "Fan Speed", "Number")
-                            .withStateDescription(state).build();
+                    ChannelTypeBuilder.state(channelTypeUID, "Fan Speed", "Number")
+                            .withStateDescription(state)
+                            .withConfigDescriptionURI(URI.create(BINDING_ID + ":" + CHANNEL_FAN_SPEED + ":config"))
+                            .build();
+                }
+
+                // Special set up for the fan breeze channel
+                if (action.getChannelId().equals(CHANNEL_FAN_BREEZE_MEAN)) {
+                    Channel channel = action.getChannel(this.getThing().getUID(), channelTypeUID);
+                    logger.trace("Prepared channel: {}", channel.toString());
+                    ChannelUID channelBreezeVarUid = new ChannelUID(this.getThing().getUID(), CHANNEL_FAN_BREEZE_VAR);
+                    Channel channelBreezeVar = ChannelBuilder.create(channelBreezeVarUid, "Dimmer").withLabel("Breeze Variablility")
+                            .withKind(ChannelKind.STATE).build();
+                    logger.trace("Prepared channel: {}", channelBreezeVar.toString());
+                    channelIds.add(CHANNEL_FAN_BREEZE_MEAN);
+                    channels.add(channelBreezeVar);
+                    logger.debug(
+                            "Based on Action {}, added channel {} to channel list with Channel UID {} and Channel Type UID {}",
+                            action.getActionId(), channelBreezeVar.getLabel(), channelBreezeVar.getUID(),
+                            channelBreezeVar.getChannelTypeUID());
                 }
 
                 // Get the channel associated with the action
                 Channel channel = action.getChannel(this.getThing().getUID(), channelTypeUID);
-                logger.trace("prepared channel: {}", channel.toString());
+                logger.trace("Prepared channel: {}", channel.toString());
 
                 channelIds.add(action.getChannelId());
                 channels.add(channel);
-                logger.debug("Added channel {} to channel list", channel.toString());
+                logger.debug(
+                        "Based on Action {}, added channel {} to channel list with Channel UID {} and Channel Type UID {}",
+                        action.getActionId(), channel.getLabel(), channel.getUID(), channel.getChannelTypeUID());
             }
         }
 
@@ -425,9 +451,11 @@ public class BondDeviceHandler extends BaseThingHandler {
             updateState(CHANNEL_POWER_STATE, updateState.power == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_TIMER, new DecimalType(updateState.timer));
             updateState(CHANNEL_FAN_SPEED, new DecimalType(updateState.speed));
-            updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
-            updateState(CHANNEL_FAN_BREEZE_MEAN, new DecimalType(updateState.breeze[1]));
-            updateState(CHANNEL_FAN_BREEZE_VAR, new DecimalType(updateState.breeze[2]));
+            if (updateState.breeze != null) {
+                updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
+                updateState(CHANNEL_FAN_BREEZE_MEAN, new DecimalType(updateState.breeze[1]));
+                updateState(CHANNEL_FAN_BREEZE_VAR, new DecimalType(updateState.breeze[2]));
+            }
             updateState(CHANNEL_FAN_DIRECTION, updateState.direction == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_FAN_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_LIGHT_BRIGHTNESS, new DecimalType(updateState.brightness));
