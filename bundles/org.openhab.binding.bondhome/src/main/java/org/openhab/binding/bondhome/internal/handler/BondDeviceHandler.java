@@ -15,7 +15,10 @@ package org.openhab.binding.bondhome.internal.handler;
 import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,16 +26,28 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.OpenClosedType;
+import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.thing.Bridge;
+import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
+import org.eclipse.smarthome.core.thing.type.ChannelType;
+import org.eclipse.smarthome.core.thing.type.ChannelTypeBuilder;
+import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.eclipse.smarthome.core.types.StateDescription;
+import org.eclipse.smarthome.core.types.StateDescriptionFragment;
+import org.eclipse.smarthome.core.types.StateDescriptionFragmentBuilder;
 import org.openhab.binding.bondhome.internal.api.BondDevice;
 import org.openhab.binding.bondhome.internal.api.BondDeviceAction;
 import org.openhab.binding.bondhome.internal.api.BondDeviceProperties;
@@ -81,6 +96,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         } else {
 
             if (command instanceof RefreshType) {
+                logger.trace("Executing refresh command");
                 try {
                     deviceState = api.getDeviceState(config.deviceId);
                     updateChannelsFromState(deviceState);
@@ -92,44 +108,171 @@ public class BondDeviceHandler extends BaseThingHandler {
 
             switch (channelUID.getId()) {
                 case CHANNEL_POWER_STATE:
+                    logger.trace("Power state command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnOn : BondDeviceAction.TurnOff, null);
                     break;
                 case CHANNEL_FAN_SPEED:
+                    logger.trace("Fan speed command");
+                    if (command instanceof DecimalType) {
+                        DecimalType decCommand = (DecimalType) command;
+                        int value = decCommand.intValue();
+                        logger.trace("Fan speed command with speed set as {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetSpeed, value);
+                    } else if (command instanceof IncreaseDecreaseType) {
+                        logger.trace("Fan increase/decrease speed command");
+                        api.executeDeviceAction(config.deviceId,
+                                ((IncreaseDecreaseType) command == IncreaseDecreaseType.INCREASE
+                                        ? BondDeviceAction.IncreaseSpeed
+                                        : BondDeviceAction.DecreaseSpeed),
+                                null);
+                    } else {
+                        logger.info("Unsupported command on fan speed channel");
+                    }
+                    break;
                 case CHANNEL_FAN_BREEZE_STATE:
+                    logger.trace("Fan enable/disable breeze command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.BreezeOn : BondDeviceAction.BreezeOff, null);
                     break;
                 case CHANNEL_FAN_BREEZE_MEAN:
+                    // TODO
+                    logger.trace("Support for fan breeze settings not yet available");
+                    break;
                 case CHANNEL_FAN_BREEZE_VAR:
+                    logger.trace("Support for fan breeze settings not yet available");
+                    // TODO
+                    break;
                 case CHANNEL_FAN_DIRECTION:
+                    logger.trace("Fan direction command");
                     api.executeDeviceAction(config.deviceId, BondDeviceAction.SetDirection,
                             command == OnOffType.ON ? 1 : -1);
                     break;
                 case CHANNEL_FAN_LIGHT_STATE:
+                    logger.trace("Fan light state command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnLightOn : BondDeviceAction.TurnLightOff,
                             null);
                     break;
                 case CHANNEL_LIGHT_BRIGHTNESS:
+                    if (command instanceof PercentType) {
+                        PercentType pctCommand = (PercentType) command;
+                        int value = pctCommand.intValue();
+                        logger.trace("Fan light brightness command with value of {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetBrightness, value);
+                    } else if (command instanceof IncreaseDecreaseType) {
+                        logger.trace("Fan light brightness increase/decrease command");
+                        api.executeDeviceAction(config.deviceId,
+                                ((IncreaseDecreaseType) command == IncreaseDecreaseType.INCREASE
+                                        ? BondDeviceAction.IncreaseBrightness
+                                        : BondDeviceAction.DecreaseBrightness),
+                                null);
+                    } else {
+                        logger.info("Unsupported command on fan light brightness channel");
+                    }
+                    break;
+                case CHANNEL_LIGHT_UNIDIRECTIONAL:
+                    logger.trace("Fan light dimmer change command");
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    break;
+                case CHANNEL_LIGHT_BIDIRECTIONAL:
+                    // TODO
+                    logger.info("Bi-direction brightness control not yet enabled!");
+                    break;
                 case CHANNEL_FAN_UP_LIGHT_STATE:
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnUpLightOn : BondDeviceAction.TurnUpLightOff,
                             null);
                     break;
                 case CHANNEL_UP_LIGHT_BRIGHTNESS:
+                    if (command instanceof PercentType) {
+                        PercentType pctCommand = (PercentType) command;
+                        int value = pctCommand.intValue();
+                        logger.trace("Fan up light brightness command with value of {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetUpLightBrightness, value);
+                    } else if (command instanceof IncreaseDecreaseType) {
+                        logger.trace("Fan uplight brightness increase/decrease command");
+                        api.executeDeviceAction(config.deviceId,
+                                ((IncreaseDecreaseType) command == IncreaseDecreaseType.INCREASE
+                                        ? BondDeviceAction.IncreaseUpLightBrightness
+                                        : BondDeviceAction.DecreaseUpLightBrightness),
+                                null);
+                    } else {
+                        logger.info("Unsupported command on fan up light brightness channel");
+                    }
+                    break;
+                case CHANNEL_UP_LIGHT_UNIDIRECTIONAL:
+                    logger.trace("Fan up light dimmer change command");
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    break;
+                case CHANNEL_UP_LIGHT_BIDIRECTIONAL:
+                    // TODO
+                    logger.info("Bi-direction brightness control not yet enabled!");
+                    break;
                 case CHANNEL_FAN_DOWN_LIGHT_STATE:
                     api.executeDeviceAction(config.deviceId, command == OnOffType.ON ? BondDeviceAction.TurnDownLightOn
                             : BondDeviceAction.TurnDownLightOff, null);
                     break;
                 case CHANNEL_DOWN_LIGHT_BRIGHTNESS:
+                    if (command instanceof PercentType) {
+                        PercentType pctCommand = (PercentType) command;
+                        int value = pctCommand.intValue();
+                        logger.trace("Fan down light brightness command with value of {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetDownLightBrightness, value);
+                    } else if (command instanceof IncreaseDecreaseType) {
+                        logger.trace("Fan down light brightness increase/decrease command");
+                        api.executeDeviceAction(config.deviceId,
+                                ((IncreaseDecreaseType) command == IncreaseDecreaseType.INCREASE
+                                        ? BondDeviceAction.IncreaseDownLightBrightness
+                                        : BondDeviceAction.DecreaseDownLightBrightness),
+                                null);
+                    } else {
+                        logger.info("Unsupported command on fan down light brightness channel");
+                    }
+                    break;
+                case CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL:
+                    logger.trace("Fan down light dimmer change command");
+                    api.executeDeviceAction(config.deviceId,
+                            command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    break;
+                case CHANNEL_DOWN_LIGHT_BIDIRECTIONAL:
+                    // TODO
+                    logger.info("Bi-direction brightness control not yet enabled!");
+                    break;
                 case CHANNEL_FLAME:
+                    if (command instanceof PercentType) {
+                        PercentType pctCommand = (PercentType) command;
+                        int value = pctCommand.intValue();
+                        logger.trace("Fireplace flame command with value of {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetFlame, value);
+                    } else if (command instanceof IncreaseDecreaseType) {
+                        logger.trace("Fireplace flame increase/decrease command");
+                        api.executeDeviceAction(config.deviceId,
+                                ((IncreaseDecreaseType) command == IncreaseDecreaseType.INCREASE
+                                        ? BondDeviceAction.IncreaseFlame
+                                        : BondDeviceAction.DecreaseFlame),
+                                null);
+                    } else {
+                        logger.info("Unsupported command on flame channel");
+                    }
+                    break;
                 case CHANNEL_FP_FAN_STATE:
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnFpFanOn : BondDeviceAction.TurnFpFanOff,
                             null);
                     break;
                 case CHANNEL_FP_FAN_SPEED:
+                    if (command instanceof PercentType) {
+                        PercentType pctCommand = (PercentType) command;
+                        int value = pctCommand.intValue();
+                        logger.trace("Fireplace fan command with value of {}", value);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.SetFpFan, value);
+                    } else {
+                        logger.info("Unsupported command on fireplace fan channel");
+                    }
+                    break;
                 case CHANNEL_OPEN_CLOSE:
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.Open : BondDeviceAction.Close, null);
@@ -225,7 +368,51 @@ public class BondDeviceHandler extends BaseThingHandler {
     }
 
     private void createChannelsFromActions(BondDeviceAction[] actions) {
-        // TODO
+        logger.trace("Creating channels based on the available actions");
+        List<Channel> channels = new ArrayList<>();
+        List<String> channelIds = new ArrayList<>();
+        ThingBuilder thingBuilder = editThing();
+
+        for (BondDeviceAction action : actions) {
+            logger.trace("action: {}", action.getActionId());
+            ChannelTypeUID channelTypeUID = null;
+
+            if (channelIds.contains(action.getChannelId())) {
+                logger.trace("Channel already existed for thing, ignoring");
+            } else {
+
+                // Special set up for the fan speed channel
+                if (action.getChannelId().equals(CHANNEL_FAN_SPEED)) {
+                    channelTypeUID = new ChannelTypeUID(BINDING_ID, "FanSpeedType");
+                    StateDescriptionFragment stateFragment = StateDescriptionFragmentBuilder.create()
+                            .withMinimum(new BigDecimal(1)).withMaximum(new BigDecimal(1)).withStep(new BigDecimal(1))
+                            .withPattern("%d").withReadOnly(false).build();
+                    BondDeviceProperties devProperties = this.deviceProperties;
+                    if (devProperties != null) {
+                        logger.trace("Preparing a state description from fan speed");
+                        stateFragment = StateDescriptionFragmentBuilder.create().withMinimum(new BigDecimal(1))
+                                .withMaximum(new BigDecimal(devProperties.max_speed)).withStep(new BigDecimal(1))
+                                .withPattern("%d").withReadOnly(false).build();
+                    }
+                    StateDescription state = stateFragment.toStateDescription();
+                    ChannelType channelType = ChannelTypeBuilder.state(channelTypeUID, "Fan Speed", "Number")
+                            .withStateDescription(state).build();
+                }
+
+                // Get the channel associated with the action
+                Channel channel = action.getChannel(this.getThing().getUID(), channelTypeUID);
+                logger.trace("prepared channel: {}", channel.toString());
+
+                channelIds.add(action.getChannelId());
+                channels.add(channel);
+                logger.debug("Added channel {} to channel list", channel.toString());
+            }
+        }
+
+        // Add all the channels
+        logger.trace("Saving the thing with all the new channels");
+        thingBuilder.withChannels(channels);
+        updateThing(thingBuilder.build());
     }
 
     public String getDeviceId() {
@@ -233,7 +420,34 @@ public class BondDeviceHandler extends BaseThingHandler {
     }
 
     public void updateChannelsFromState(@Nullable BondDeviceState updateState) {
-        // TODO
+        if (updateState != null) {
+            logger.debug("Updating channels from state");
+            updateState(CHANNEL_POWER_STATE, updateState.power == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_TIMER, new DecimalType(updateState.timer));
+            updateState(CHANNEL_FAN_SPEED, new DecimalType(updateState.speed));
+            updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_FAN_BREEZE_MEAN, new DecimalType(updateState.breeze[1]));
+            updateState(CHANNEL_FAN_BREEZE_VAR, new DecimalType(updateState.breeze[2]));
+            updateState(CHANNEL_FAN_DIRECTION, updateState.direction == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_FAN_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_LIGHT_BRIGHTNESS, new DecimalType(updateState.brightness));
+            // updateState(CHANNEL_LIGHT_UNIDIRECTIONAL, updateState.brightnessU);
+            // updateState(CHANNEL_LIGHT_BIDIRECTIONAL, updateState.brightnessB);
+            updateState(CHANNEL_FAN_UP_LIGHT_STATE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_UP_LIGHT_BRIGHTNESS, new DecimalType(updateState.up_light_brightness));
+            // updateState(CHANNEL_UP_LIGHT_UNIDIRECTIONAL, updateState.up_light_brightnessU);
+            // updateState(CHANNEL_UP_LIGHT_BIDIRECTIONAL, updateState.up_light_brightnessB);
+            updateState(CHANNEL_FAN_DOWN_LIGHT_STATE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_DOWN_LIGHT_BRIGHTNESS, new DecimalType(updateState.down_light_brightness));
+            // updateState(CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL, updateState.down_light_brightnessU);
+            // updateState(CHANNEL_DOWN_LIGHT_BIDIRECTIONAL, updateState.down_light_brightnessB);
+            updateState(CHANNEL_FLAME, new DecimalType(updateState.flame));
+            updateState(CHANNEL_FP_FAN_STATE, updateState.fpfan_power == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_FP_FAN_SPEED, new DecimalType(updateState.fpfan_speed));
+            updateState(CHANNEL_OPEN_CLOSE, updateState.open == 0 ? OpenClosedType.CLOSED : OpenClosedType.OPEN);
+        } else {
+            logger.debug("No state information provided to update channels with");
+        }
     }
 
 }

@@ -29,7 +29,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 @NonNullByDefault
 public class BondHomeBindingConstants {
 
-    private static final String BINDING_ID = "bondhome";
+    public static final String BINDING_ID = "bondhome";
 
     /**
      * List of all Thing Type UIDs.
@@ -53,20 +53,27 @@ public class BondHomeBindingConstants {
      * List of all Channel ids
      */
     public static final String CHANNEL_POWER_STATE = "power";
+    public static final String CHANNEL_TIMER = "timer";
     public static final String CHANNEL_FAN_SPEED = "fanSpeed";
     public static final String CHANNEL_FAN_BREEZE_STATE = "breezeState";
     public static final String CHANNEL_FAN_BREEZE_MEAN = "breezeMean";
     public static final String CHANNEL_FAN_BREEZE_VAR = "breezeVariability";
     public static final String CHANNEL_FAN_DIRECTION = "direction";
-    public static final String CHANNEL_FAN_LIGHT_STATE = "fanLightState";
-    public static final String CHANNEL_LIGHT_BRIGHTNESS = "fanLightBrightness";
-    public static final String CHANNEL_FAN_UP_LIGHT_STATE = "fanUpLightState";
-    public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "fanUpLightBrightness";
-    public static final String CHANNEL_FAN_DOWN_LIGHT_STATE = "fanDownLightState";
-    public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "fanDownLightBrightness";
+    public static final String CHANNEL_FAN_LIGHT_STATE = "light";
+    public static final String CHANNEL_LIGHT_BRIGHTNESS = "brightness";
+    public static final String CHANNEL_LIGHT_UNIDIRECTIONAL = "brightnessU";
+    public static final String CHANNEL_LIGHT_BIDIRECTIONAL = "brightnessB";
+    public static final String CHANNEL_FAN_UP_LIGHT_STATE = "up_light";
+    public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "up_light_brightness";
+    public static final String CHANNEL_UP_LIGHT_UNIDIRECTIONAL = "up_light_brightnessU";
+    public static final String CHANNEL_UP_LIGHT_BIDIRECTIONAL = "up_light_brightnessB";
+    public static final String CHANNEL_FAN_DOWN_LIGHT_STATE = "down_light";
+    public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "down_light_brightness";
+    public static final String CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL = "down_light_brightnessU";
+    public static final String CHANNEL_DOWN_LIGHT_BIDIRECTIONAL = "down_light_brightnessB";
     public static final String CHANNEL_FLAME = "flame";
-    public static final String CHANNEL_FP_FAN_STATE = "fpFanState";
-    public static final String CHANNEL_FP_FAN_SPEED = "fpFanSpeed";
+    public static final String CHANNEL_FP_FAN_STATE = "fpfan_power";
+    public static final String CHANNEL_FP_FAN_SPEED = "fpfan_speed";
     public static final String CHANNEL_OPEN_CLOSE = "open";
 
     /**

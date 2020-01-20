@@ -15,7 +15,6 @@
 
 		<channels>
 			<channel id="power" typeId="system.power" />
-			<channel id="fanSpeed" typeId="fanSpeed" />
 		</channels>
 
 		<representation-property>deviceId</representation-property>
@@ -23,12 +22,5 @@
 		<config-description-ref uri="bondhome:bonddevice:config" />
 
 	</thing-type>
-
-	<!-- Channel Types -->
-	<channel-type id="fanSpeed">
-		<item-type>Dimmer</item-type>
-		<label>Fan Speed</label>
-		<description>Fan speed</description>
-	</channel-type>
 
 </thing:thing-descriptions>

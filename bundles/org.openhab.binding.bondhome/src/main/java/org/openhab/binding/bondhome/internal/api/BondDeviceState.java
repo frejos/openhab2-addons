@@ -13,7 +13,6 @@
 package org.openhab.binding.bondhome.internal.api;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -51,7 +50,7 @@ public class BondDeviceState {
     // mean: (integer) sets the average speed. 0 = minimum average speed (calm), 100 = maximum average speed (storm)
     // var: (integer) sets the variability of the speed. 0 = minimum variation (steady), 100 = maximum variation (gusty)
     @Expose(serialize = true, deserialize = true)
-    public float @Nullable [] breeze;
+    public int[] breeze = { 0, 50, 50 };
     // The direction of a fan with a reversible motor 1 = forward, -1 = reverse.
     // The forward and reverse modes are sometimes called Summer and Winter, respectively.
     @Expose(serialize = true, deserialize = true)
