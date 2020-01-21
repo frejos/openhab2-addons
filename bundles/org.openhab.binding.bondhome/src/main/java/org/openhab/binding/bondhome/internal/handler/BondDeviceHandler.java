@@ -41,6 +41,10 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ChannelBuilder;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
+import org.eclipse.smarthome.core.thing.type.ChannelDefinition;
+import org.eclipse.smarthome.core.thing.type.ChannelDefinitionBuilder;
+import org.eclipse.smarthome.core.thing.type.ChannelGroupType;
+import org.eclipse.smarthome.core.thing.type.ChannelGroupTypeBuilder;
 import org.eclipse.smarthome.core.thing.type.ChannelKind;
 import org.eclipse.smarthome.core.thing.type.ChannelType;
 import org.eclipse.smarthome.core.thing.type.ChannelTypeBuilder;
@@ -50,6 +54,7 @@ import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.StateDescription;
 import org.eclipse.smarthome.core.types.StateDescriptionFragment;
 import org.eclipse.smarthome.core.types.StateDescriptionFragmentBuilder;
+import org.openhab.binding.bondhome.internal.BondHomeHandlerFactory;
 import org.openhab.binding.bondhome.internal.api.BondDevice;
 import org.openhab.binding.bondhome.internal.api.BondDeviceAction;
 import org.openhab.binding.bondhome.internal.api.BondDeviceProperties;
@@ -58,8 +63,6 @@ import org.openhab.binding.bondhome.internal.api.BondHttpApi;
 import org.openhab.binding.bondhome.internal.config.BondDeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.net.URI;
-
 
 /**
  * The {@link BondDeviceHandler} is responsible for handling commands, which are
@@ -78,6 +81,7 @@ public class BondDeviceHandler extends BaseThingHandler {
     private @Nullable BondDevice deviceInfo;
     private @Nullable BondDeviceProperties deviceProperties;
     private @Nullable BondDeviceState deviceState;
+    private final BondHomeHandlerFactory factory;
 
     /**
      * The supported thing types.
@@ -86,8 +90,9 @@ public class BondDeviceHandler extends BaseThingHandler {
             .of(THING_TYPE_BOND_FAN, THING_TYPE_BOND_SHADES, THING_TYPE_BOND_FIREPLACE, THING_TYPE_BOND_GENERIC)
             .collect(Collectors.toSet());
 
-    public BondDeviceHandler(Thing thing) {
+    public BondDeviceHandler(Thing thing, BondHomeHandlerFactory factory) {
         super(thing);
+        this.factory = factory;
         logger.trace("Created handler for bond device.");
     }
 
@@ -152,7 +157,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                     api.executeDeviceAction(config.deviceId, BondDeviceAction.SetDirection,
                             command == OnOffType.ON ? 1 : -1);
                     break;
-                case CHANNEL_FAN_LIGHT_STATE:
+                case CHANNEL_LIGHT_STATE:
                     logger.trace("Fan light state command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnLightOn : BondDeviceAction.TurnLightOff,
@@ -184,7 +189,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                     // TODO
                     logger.info("Bi-direction brightness control not yet enabled!");
                     break;
-                case CHANNEL_FAN_UP_LIGHT_STATE:
+                case CHANNEL_UP_LIGHT_STATE:
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnUpLightOn : BondDeviceAction.TurnUpLightOff,
                             null);
@@ -215,7 +220,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                     // TODO
                     logger.info("Bi-direction brightness control not yet enabled!");
                     break;
-                case CHANNEL_FAN_DOWN_LIGHT_STATE:
+                case CHANNEL_DOWN_LIGHT_STATE:
                     api.executeDeviceAction(config.deviceId, command == OnOffType.ON ? BondDeviceAction.TurnDownLightOn
                             : BondDeviceAction.TurnDownLightOff, null);
                     break;
@@ -320,6 +325,12 @@ public class BondDeviceHandler extends BaseThingHandler {
         });
     }
 
+    @Override
+    public void dispose() {
+        factory.removeChannelTypesForThing(getThing().getUID());
+        factory.removeChannelGroupTypesForThing(getThing().getUID());
+    }
+
     private void initializeThing() {
         BondHttpApi api = this.api;
         if (api != null) {
@@ -373,66 +384,151 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     private void createChannelsFromActions(BondDeviceAction[] actions) {
         logger.trace("Creating channels based on the available actions");
-        List<Channel> channels = new ArrayList<>();
-        List<String> channelIds = new ArrayList<>();
+        // Get the thing to edit
         ThingBuilder thingBuilder = editThing();
 
+        // list of all the channels
+        List<Channel> channels = new ArrayList<>();
+        List<String> channelIds = new ArrayList<>();
+
+        // lists of channel definitions by group
+        List<ChannelDefinition> basicChannels = new ArrayList<>();
+        List<ChannelDefinition> fanChannels = new ArrayList<>();
+        List<ChannelDefinition> lightChannels = new ArrayList<>();
+        List<ChannelDefinition> upLightChannels = new ArrayList<>();
+        List<ChannelDefinition> downLightChannels = new ArrayList<>();
+        List<ChannelDefinition> fireplaceChannels = new ArrayList<>();
+        List<ChannelDefinition> shadeChannels = new ArrayList<>();
+
         for (BondDeviceAction action : actions) {
-            logger.trace("action: {}", action.getActionId());
-            ChannelTypeUID channelTypeUID = null;
+            if (action != null) {
+                logger.trace("action: {}", action.getActionId());
 
-            if (channelIds.contains(action.getChannelId())) {
-                logger.trace("Channel already existed for thing, ignoring");
-            } else if (action.getChannelId() == "") {
-                logger.trace("No channel is associated with this action, ignoring");
-            } else {
+                if (channelIds.contains(action.getChannelId())) {
+                    logger.trace("Channel already existed for thing, ignoring");
+                } else if (action.getChannelId() == "") {
+                    logger.trace("No channel is associated with this action, ignoring");
+                } else {
 
-                // Special set up for the fan speed channel
-                if (action.getChannelId().equals(CHANNEL_FAN_SPEED)) {
-                    channelTypeUID = new ChannelTypeUID(BINDING_ID, "FanSpeedType");
-                    StateDescriptionFragment stateFragment = StateDescriptionFragmentBuilder.create()
-                            .withMinimum(new BigDecimal(1)).withMaximum(new BigDecimal(1)).withStep(new BigDecimal(1))
-                            .withPattern("%d").withReadOnly(false).build();
-                    BondDeviceProperties devProperties = this.deviceProperties;
-                    if (devProperties != null) {
-                        logger.trace("Preparing a state description from fan speed");
-                        stateFragment = StateDescriptionFragmentBuilder.create().withMinimum(new BigDecimal(1))
-                                .withMaximum(new BigDecimal(devProperties.max_speed)).withStep(new BigDecimal(1))
-                                .withPattern("%d").withReadOnly(false).build();
+                    ChannelTypeUID channelTypeUID = new ChannelTypeUID(BINDING_ID, action.getChannelId());
+                    ChannelType channelType = ChannelTypeBuilder
+                            .state(channelTypeUID, action.getChannelLabel(), action.getAcceptedItemType()).build();
+
+                    // Special set up for the fan speed channel
+                    if (action.getChannelId().equals(CHANNEL_FAN_SPEED)) {
+                        StateDescriptionFragment stateFragment = StateDescriptionFragmentBuilder.create()
+                                .withMinimum(new BigDecimal(1)).withMaximum(new BigDecimal(1))
+                                .withStep(new BigDecimal(1)).withPattern("%d").withReadOnly(false).build();
+                        BondDeviceProperties devProperties = this.deviceProperties;
+                        if (devProperties != null) {
+                            stateFragment = StateDescriptionFragmentBuilder.create().withMinimum(new BigDecimal(1))
+                                    .withMaximum(new BigDecimal(devProperties.max_speed)).withStep(new BigDecimal(1))
+                                    .withPattern("%d").withReadOnly(false).build();
+                        }
+                        StateDescription state = stateFragment.toStateDescription();
+                        logger.trace("State description for fan speed: {}", state.toString());
+                        channelType = ChannelTypeBuilder
+                                .state(channelTypeUID, action.getChannelLabel(), action.getAcceptedItemType())
+                                .withStateDescription(state).build();
                     }
-                    StateDescription state = stateFragment.toStateDescription();
-                    ChannelTypeBuilder.state(channelTypeUID, "Fan Speed", "Number")
-                            .withStateDescription(state)
-                            .withConfigDescriptionURI(URI.create(BINDING_ID + ":" + CHANNEL_FAN_SPEED + ":config"))
-                            .build();
-                }
 
-                // Special set up for the fan breeze channel
-                if (action.getChannelId().equals(CHANNEL_FAN_BREEZE_MEAN)) {
+                    // Special set up for the fan breeze channel
+                    if (action.getChannelId().equals(CHANNEL_FAN_BREEZE_MEAN)) {
+                        ChannelTypeUID channelBreezeVarTypeUID = new ChannelTypeUID(BINDING_ID, CHANNEL_FAN_BREEZE_VAR);
+                        ChannelType channelBreezeVarType = ChannelTypeBuilder
+                                .state(channelBreezeVarTypeUID, action.getChannelLabel(), "Dimmer").build();
+                        factory.addChannelType(channelBreezeVarType);
+                        ChannelUID channelBreezeVarUid = new ChannelUID(this.getThing().getUID(),
+                                CHANNEL_FAN_BREEZE_VAR);
+                        Channel channelBreezeVar = ChannelBuilder.create(channelBreezeVarUid, "Dimmer")
+                                .withLabel("Breeze Variablility").withKind(ChannelKind.STATE).build();
+                        ChannelDefinition channelDef = new ChannelDefinitionBuilder("Breeze Variablility",
+                                channelBreezeVarTypeUID).build();
+                        channelIds.add(CHANNEL_FAN_BREEZE_MEAN);
+                        channels.add(channelBreezeVar);
+                        fanChannels.add(channelDef);
+                    }
+
+                    // Get the channel associated with the action
                     Channel channel = action.getChannel(this.getThing().getUID(), channelTypeUID);
-                    logger.trace("Prepared channel: {}", channel.toString());
-                    ChannelUID channelBreezeVarUid = new ChannelUID(this.getThing().getUID(), CHANNEL_FAN_BREEZE_VAR);
-                    Channel channelBreezeVar = ChannelBuilder.create(channelBreezeVarUid, "Dimmer").withLabel("Breeze Variablility")
-                            .withKind(ChannelKind.STATE).build();
-                    logger.trace("Prepared channel: {}", channelBreezeVar.toString());
-                    channelIds.add(CHANNEL_FAN_BREEZE_MEAN);
-                    channels.add(channelBreezeVar);
+                    // Add the channel type to the channel type provider
+                    factory.addChannelType(channelType);
+
+                    ChannelDefinition channelDef = new ChannelDefinitionBuilder(action.getChannelLabel(),
+                            channelTypeUID).build();
+                    logger.trace("Prepared channel definition: {}", channelDef.toString());
+
+                    channelIds.add(action.getChannelId());
+                    channels.add(channel);
+
+                    if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_BASIC) {
+                        basicChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_FAN) {
+                        fanChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_LIGHT) {
+                        lightChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_UP_LIGHT) {
+                        upLightChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_DOWN_LIGHT) {
+                        downLightChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_FIREPLACE) {
+                        fireplaceChannels.add(channelDef);
+                    } else if (action.getChannelGroupTypeUID() == CHANNEL_GROUP_SHADES) {
+                        shadeChannels.add(channelDef);
+                    }
+
                     logger.debug(
-                            "Based on Action {}, added channel {} to channel list with Channel UID {} and Channel Type UID {}",
-                            action.getActionId(), channelBreezeVar.getLabel(), channelBreezeVar.getUID(),
-                            channelBreezeVar.getChannelTypeUID());
+                            "Based on Action {}, added channel {} ({}) to channel list with Channel UID {} and Channel Type UID {}",
+                            action.getActionId(), channel.toString(), channel.getLabel(), channel.getUID(),
+                            channel.getChannelTypeUID());
                 }
-
-                // Get the channel associated with the action
-                Channel channel = action.getChannel(this.getThing().getUID(), channelTypeUID);
-                logger.trace("Prepared channel: {}", channel.toString());
-
-                channelIds.add(action.getChannelId());
-                channels.add(channel);
-                logger.debug(
-                        "Based on Action {}, added channel {} to channel list with Channel UID {} and Channel Type UID {}",
-                        action.getActionId(), channel.getLabel(), channel.getUID(), channel.getChannelTypeUID());
             }
+        }
+
+        if (!basicChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder.instance(CHANNEL_GROUP_BASIC, "Basic Device Channels")
+                    .withChannelDefinitions(basicChannels).build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for basic channels {}", grouptype.toString());
+        }
+        if (!fanChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder.instance(CHANNEL_GROUP_FAN, "Ceiling Fan Channels")
+                    .withChannelDefinitions(fanChannels).build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for ceiling fan channels {}", grouptype.toString());
+        }
+        if (!lightChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder.instance(CHANNEL_GROUP_LIGHT, "Fan Light Channels")
+                    .withChannelDefinitions(lightChannels).withCategory("light").build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for fan light channels {}", grouptype.toString());
+        }
+        if (!upLightChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder
+                    .instance(CHANNEL_GROUP_UP_LIGHT, "Fan Up Light Channels").withChannelDefinitions(upLightChannels)
+                    .withCategory("light").build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for fan up light channels {}", grouptype.toString());
+        }
+        if (!downLightChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder
+                    .instance(CHANNEL_GROUP_DOWN_LIGHT, "Fan Down Light Channels")
+                    .withChannelDefinitions(downLightChannels).withCategory("light").build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for fan down light channels {}", grouptype.toString());
+        }
+        if (!fireplaceChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder.instance(CHANNEL_GROUP_BASIC, "Fireplace Channels")
+                    .withChannelDefinitions(fireplaceChannels).build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for fireplace channels {}", grouptype.toString());
+        }
+        if (!shadeChannels.isEmpty()) {
+            ChannelGroupType grouptype = ChannelGroupTypeBuilder
+                    .instance(CHANNEL_GROUP_BASIC, "Motorized Shade Channels").withChannelDefinitions(shadeChannels)
+                    .build();
+            factory.addChannelGroupType(grouptype);
+            logger.trace("Created channel group type for motorized shade channels {}", grouptype.toString());
         }
 
         // Add all the channels
@@ -457,15 +553,15 @@ public class BondDeviceHandler extends BaseThingHandler {
                 updateState(CHANNEL_FAN_BREEZE_VAR, new DecimalType(updateState.breeze[2]));
             }
             updateState(CHANNEL_FAN_DIRECTION, updateState.direction == 0 ? OnOffType.OFF : OnOffType.ON);
-            updateState(CHANNEL_FAN_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_LIGHT_BRIGHTNESS, new DecimalType(updateState.brightness));
             // updateState(CHANNEL_LIGHT_UNIDIRECTIONAL, updateState.brightnessU);
             // updateState(CHANNEL_LIGHT_BIDIRECTIONAL, updateState.brightnessB);
-            updateState(CHANNEL_FAN_UP_LIGHT_STATE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_UP_LIGHT_STATE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_UP_LIGHT_BRIGHTNESS, new DecimalType(updateState.up_light_brightness));
             // updateState(CHANNEL_UP_LIGHT_UNIDIRECTIONAL, updateState.up_light_brightnessU);
             // updateState(CHANNEL_UP_LIGHT_BIDIRECTIONAL, updateState.up_light_brightnessB);
-            updateState(CHANNEL_FAN_DOWN_LIGHT_STATE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_DOWN_LIGHT_STATE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_DOWN_LIGHT_BRIGHTNESS, new DecimalType(updateState.down_light_brightness));
             // updateState(CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL, updateState.down_light_brightnessU);
             // updateState(CHANNEL_DOWN_LIGHT_BIDIRECTIONAL, updateState.down_light_brightnessB);

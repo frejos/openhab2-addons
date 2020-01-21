@@ -150,8 +150,8 @@ public class BPUPListener extends Thread {
         byte[] buffer = new byte[256];
         DatagramPacket inPacket = new DatagramPacket(buffer, buffer.length);
 
-        DatagramSocket sock = this.socket;
-        while (sock != null && !this.shutdown) {
+        while (!this.shutdown) {
+
             // Check if we're due to send something to keep the connection
             long now = System.currentTimeMillis();
             long timePassedFromLastKeepAlive = now - timeOfLastKeepAlivePacket;
@@ -160,14 +160,42 @@ public class BPUPListener extends Thread {
                 sendBPUPKeepAlive();
                 timeOfLastKeepAlivePacket = now;
             }
-            try {
-                sock.receive(inPacket);
-                processPacket(inPacket);
-            } catch (SocketTimeoutException e) {
-                // Nothing to do on socket timeout
-            } catch (IOException e) {
-                logger.debug("Listener got IOException waiting for datagram: {}", e.getMessage());
-                // this.socket = null;
+
+            DatagramSocket sock = this.socket;
+            if (sock != null) {
+                if (sock.isClosed() || !sock.isConnected()) {
+                    // logger.trace(
+                    // "Datagram Socket is disconnected or has been closed (probably timed out), reconnecting...");
+                    try {
+                        // close the socket before trying to reopen
+                        sock.close();
+                        // logger.trace("Old socket closed.");
+                        DatagramSocket s = new DatagramSocket(null);
+                        s.setReuseAddress(true);
+                        s.setBroadcast(true);
+                        s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
+                        s.bind(new InetSocketAddress(BOND_BPUP_PORT));
+                        this.socket = s;
+                        sock = s;
+                        // logger.trace("Datagram Socket reconnected.");
+                    } catch (SocketException exception) {
+                        logger.error("Problem creating one new socket on port {}. Error: {}", BOND_BPUP_PORT,
+                                exception.getLocalizedMessage());
+                    }
+                }
+            }
+
+            sock = this.socket;
+            if (sock != null) {
+                try {
+                    sock.receive(inPacket);
+                    processPacket(inPacket);
+                } catch (SocketTimeoutException e) {
+                    // Nothing to do on socket timeout
+                } catch (IOException e) {
+                    logger.debug("Listener got IOException waiting for datagram: {}", e.getMessage());
+                    // this.socket = null;
+                }
             }
         }
         logger.debug("Listener exiting");
