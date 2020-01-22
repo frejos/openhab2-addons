@@ -69,9 +69,9 @@ public class BondDeviceState {
     @Expose(serialize = true, deserialize = true)
     public int brightness;
     @Expose(serialize = true, deserialize = true)
-    public int up_light_brightness;
+    public int upLightBrightness;
     @Expose(serialize = true, deserialize = true)
-    public int down_light_brightness;
+    public int downLightBrightness;
     // The flame level of a fireplace - value from 1 to 100. If power=0, flame represents the last flame setting and
     // the flame to which the device resumes when user asks to turn on
     @Expose(serialize = true, deserialize = true)
