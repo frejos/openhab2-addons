@@ -79,7 +79,6 @@ public class BondDiscoveryService extends AbstractDiscoveryService {
                         thingDiscovered(discoveryResult);
                     }
                 }
-
             }
         } catch (IOException ignored) {
             logger.warn("Error getting devices for discovery!");

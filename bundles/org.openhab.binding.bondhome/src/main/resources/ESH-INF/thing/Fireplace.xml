@@ -13,22 +13,10 @@
 		<label>Bond Home Fireplace</label>
 		<description>An RF or IR remote controlled fireplace with or without a fan</description>
 
-		<channels>
-			<channel id="power" typeId="system.power" />
-			<channel id="flame" typeId="flame" />
-		</channels>
-
 		<representation-property>deviceId</representation-property>
 
 		<config-description-ref uri="bondhome:bonddevice:config" />
 
 	</thing-type>
-
-	<!-- Channel Types -->
-	<channel-type id="flame">
-		<item-type>Dimmer</item-type>
-		<label>Flame Level</label>
-		<description>Flame level</description>
-	</channel-type>
 
 </thing:thing-descriptions>

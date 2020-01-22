@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
-import org.eclipse.smarthome.core.thing.type.ChannelGroupTypeUID;
 
 /**
  * The {@link BondHomeBindingConstants} class defines common constants, which are
@@ -51,48 +50,53 @@ public class BondHomeBindingConstants {
     public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_TYPES = Collections.singleton(THING_TYPE_BOND_BRIDGE);
 
     /**
-     * List of all Channel ids
+     * List of all Channel ids - these match the id fields in the ESH xml files
      */
 
     // Universal channels
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_BASIC = new ChannelGroupTypeUID(BINDING_ID, "basic");
-    public static final String CHANNEL_POWER_STATE = "power";
-    public static final String CHANNEL_TIMER = "timer";
+    public static final String CHANNEL_GROUP_BASIC = "basicChannelGroup";
+    public static final String CHANNEL_POWER_STATE = "powerChannel";
+    public static final String CHANNEL_TIMER = "timerChannel";
 
     // Ceiling fan channels
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_FAN = new ChannelGroupTypeUID(BINDING_ID, "ceilingFan");
-    public static final String CHANNEL_FAN_SPEED = "fanSpeed";
-    public static final String CHANNEL_FAN_BREEZE_STATE = "breezeState";
-    public static final String CHANNEL_FAN_BREEZE_MEAN = "breezeMean";
-    public static final String CHANNEL_FAN_BREEZE_VAR = "breezeVariability";
-    public static final String CHANNEL_FAN_DIRECTION = "direction";
+    public static final String CHANNEL_GROUP_FAN = "ceilingFanChannelGroup";
+    public static final String CHANNEL_FAN_SPEED = "fanSpeedChannel";
+    public static final String CHANNEL_FAN_BREEZE_STATE = "breezeStateChannel";
+    public static final String CHANNEL_FAN_BREEZE_MEAN = "breezeMeanChannel";
+    public static final String CHANNEL_FAN_BREEZE_VAR = "breezeVariabilityChannel";
+    public static final String CHANNEL_FAN_DIRECTION = "directionChannel";
 
     // Fan light channels
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_LIGHT = new ChannelGroupTypeUID(BINDING_ID, "light");
-    public static final String CHANNEL_LIGHT_STATE = "light";
-    public static final String CHANNEL_LIGHT_BRIGHTNESS = "brightness";
-    public static final String CHANNEL_LIGHT_UNIDIRECTIONAL = "brightnessU";
-    public static final String CHANNEL_LIGHT_BIDIRECTIONAL = "brightnessB";
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_UP_LIGHT = new ChannelGroupTypeUID(BINDING_ID, "upLight");
-    public static final String CHANNEL_UP_LIGHT_STATE = "up_light";
-    public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "up_light_brightness";
-    public static final String CHANNEL_UP_LIGHT_UNIDIRECTIONAL = "up_light_brightnessU";
-    public static final String CHANNEL_UP_LIGHT_BIDIRECTIONAL = "up_light_brightnessB";
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_DOWN_LIGHT = new ChannelGroupTypeUID(BINDING_ID, "downLight");
-    public static final String CHANNEL_DOWN_LIGHT_STATE = "down_light";
-    public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "down_light_brightness";
-    public static final String CHANNEL_DOWN_LIGHT_UNIDIRECTIONAL = "down_light_brightnessU";
-    public static final String CHANNEL_DOWN_LIGHT_BIDIRECTIONAL = "down_light_brightnessB";
+    public static final String CHANNEL_GROUP_LIGHT = "lightChannelGroup";
+    public static final String CHANNEL_LIGHT_STATE = "lightChannel";
+    public static final String CHANNEL_LIGHT_BRIGHTNESS = "brightnessChannel";
+    public static final String CHANNEL_LIGHT_START_STOP = "dimmerStartStopChannel";
+    public static final String CHANNEL_LIGHT_DIRECTIONAL_INC = "DimmerIncrChannel";
+    public static final String CHANNEL_LIGHT_DIRECTIONAL_DECR = "DimmerDcrChannel";
+
+    public static final String CHANNEL_GROUP_UP_LIGHT = "upLightChannelGroup";
+    public static final String CHANNEL_UP_LIGHT_STATE = "upLightChannel";
+    public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "upLightBrightnessChannel";
+    public static final String CHANNEL_UP_LIGHT_START_STOP = "upLightDimmerStartStopChannel";
+    public static final String CHANNEL_UP_LIGHT_DIRECTIONAL_INC = "upLightDimmerIncrChannel";
+    public static final String CHANNEL_UP_LIGHT_DIRECTIONAL_DECR = "upLightDimmerDcrChannel";
+
+    public static final String CHANNEL_GROUP_DOWN_LIGHT = "downLightChannelGroup";
+    public static final String CHANNEL_DOWN_LIGHT_STATE = "downLightChannel";
+    public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "downLightBrightnessChannel";
+    public static final String CHANNEL_DOWN_LIGHT_START_STOP = "downLightDimmerStartStopChannel";
+    public static final String CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC = "downLightDimmerIncrChannel";
+    public static final String CHANNEL_DOWN_LIGHT_DIRECTIONAL_DECR = "downLightDimmerDcrChannel";
 
     // Fireplace channels
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_FIREPLACE = new ChannelGroupTypeUID(BINDING_ID, "fireplace");
-    public static final String CHANNEL_FLAME = "flame";
-    public static final String CHANNEL_FP_FAN_STATE = "fpfan_power";
-    public static final String CHANNEL_FP_FAN_SPEED = "fpfan_speed";
+    public static final String CHANNEL_GROUP_FIREPLACE = "fireplaceChannelGroup";
+    public static final String CHANNEL_FLAME = "flameChannel";
+    public static final String CHANNEL_FP_FAN_STATE = "fpFanPowerChannel";
+    public static final String CHANNEL_FP_FAN_SPEED = "fpFanSpeedChannel";
 
     // Motorize shade channels
-    public static final ChannelGroupTypeUID CHANNEL_GROUP_SHADES = new ChannelGroupTypeUID(BINDING_ID, "shades");
-    public static final String CHANNEL_OPEN_CLOSE = "open";
+    public static final String CHANNEL_GROUP_SHADES = "shadeChannelGroup";
+    public static final String CHANNEL_OPEN_CLOSE = "openShadeChannel";
 
     /**
      * Configuration arguments

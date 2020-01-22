@@ -13,10 +13,6 @@
 		<label>Bond Home Generic Remote</label>
 		<description>A generic RF or IR remote controlled device</description>
 
-		<channels>
-			<channel id="power" typeId="system.power" />
-		</channels>
-
 		<representation-property>deviceId</representation-property>
 
 		<config-description-ref uri="bondhome:bonddevice:config" />

@@ -13,10 +13,6 @@
 		<label>Bond Home Ceiling Fan</label>
 		<description>An RF or IR remote controlled ceiling fan with or without a light</description>
 
-		<channels>
-			<channel id="power" typeId="system.power" />
-		</channels>
-
 		<representation-property>deviceId</representation-property>
 
 		<config-description-ref uri="bondhome:bonddevice:config" />

@@ -129,7 +129,6 @@ public class BPUPListener extends Thread {
     }
 
     private synchronized void receivePackets() {
-
         try {
             DatagramSocket s = new DatagramSocket(null);
             s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
@@ -151,7 +150,6 @@ public class BPUPListener extends Thread {
         DatagramPacket inPacket = new DatagramPacket(buffer, buffer.length);
 
         while (!this.shutdown) {
-
             // Check if we're due to send something to keep the connection
             long now = System.currentTimeMillis();
             long timePassedFromLastKeepAlive = now - timeOfLastKeepAlivePacket;

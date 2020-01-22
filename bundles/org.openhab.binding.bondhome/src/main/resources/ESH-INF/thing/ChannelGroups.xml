@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="globalcache"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<!-- Channels Groups -->
+
+	<channel-group-type id="basicChannelGroup">
+		<label>Basic</label>
+		<channels>
+			<channel id="powerChannel" typeId="powerChannelType" />
+			<channel id="timerChannel" typeId="timerChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="ceilingFanChannelGroup">
+		<label>Ceiling Fan</label>
+		<channels>
+			<channel id="fanSpeedChannel" typeId="fanSpeedChannelType" />
+			<channel id="breezeStateChannel" typeId="breezeStateChannelType" />
+			<channel id="breezeMeanChannel" typeId="breezeMeanChannelType" />
+			<channel id="breezeVariabilityChannel" typeId="breezeVariabilityChannelType" />
+			<channel id="directionChannel" typeId="directionChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="lightChannelGroup">
+		<label>Light</label>
+		<channels>
+			<channel id="lightChannel" typeId="lightChannelType" />
+			<channel id="brightnessChannel" typeId="brightnessChannelType" />
+			<channel id="dimmerStartStopChannel" typeId="dimmerStartStopChannelType" />
+			<channel id="DimmerIncrChannel" typeId="DimmerIncrChannelType" />
+			<channel id="DimmerDcrChannel" typeId="DimmerDcrChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="upLightChannelGroup">
+		<label>Up Light</label>
+		<channels>
+			<channel id="upLightChannel" typeId="upLightChannelType" />
+			<channel id="upLightBrightnessChannel" typeId="upLightBrightnessChannelType" />
+			<channel id="upLightDimmerStartStopChannel" typeId="upLightDimmerStartStopChannelType" />
+			<channel id="upLightDimmerIncrChannel" typeId="upLightDimmerIncrChannelType" />
+			<channel id="upLightDimmerDcrChannel" typeId="upLightDimmerDcrChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="downLightChannelGroup">
+		<label>Down Light</label>
+		<channels>
+			<channel id="downLightChannel" typeId="downLightChannelType" />
+			<channel id="downLightBrightnessChannel" typeId="downLightBrightnessChannelType" />
+			<channel id="downLightDimmerStartStopChannel" typeId="downLightDimmerStartStopChannelType" />
+			<channel id="downLightDimmerIncrChannel" typeId="downLightDimmerIncrChannelType" />
+			<channel id="downLightDimmerDcrChannel" typeId="downLightDimmerDcrChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="fireplaceChannelGroup">
+		<label>Fireplace</label>
+		<channels>
+			<channel id="flameChannel" typeId="flameChannelType" />
+			<channel id="fpFanPowerChannel" typeId="fpFanPowerChannelType" />
+			<channel id="fpFanSpeedChannel" typeId="fpFanSpeedChannelType" />
+		</channels>
+	</channel-group-type>
+
+	<channel-group-type id="shadeChannelGroup">
+		<label>Fireplace</label>
+		<channels>
+			<channel id="openShadeChannel" typeId="openShadeChannelType" />
+		</channels>
+	</channel-group-type>
+
+</thing:thing-descriptions>
