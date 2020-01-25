@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-@Component(configurationPid = "binding.bondhome", service = { ThingTypeProvider.class, ChannelTypeProvider.class,
-        ChannelGroupTypeProvider.class })
+@Component(configurationPid = "binding.bondhome.typeprovider", service = { ThingTypeProvider.class,
+        ChannelTypeProvider.class, ChannelGroupTypeProvider.class, BondHomeTypeProvider.class })
 public class BondHomeTypeProvider implements ThingTypeProvider, ChannelGroupTypeProvider, ChannelTypeProvider {
     private Logger logger = LoggerFactory.getLogger(BondHomeTypeProvider.class);
     private final ThingTypeRegistry typeRegistry;

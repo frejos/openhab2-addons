@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-@Component(configurationPid = "binding.bondhome", service = { DynamicStateDescriptionProvider.class })
+@Component(configurationPid = "binding.bondhome.stateprovider", service = { BondHomeStateDescriptionProvider.class,
+        DynamicStateDescriptionProvider.class })
 public class BondHomeStateDescriptionProvider implements DynamicStateDescriptionProvider {
     private Logger logger = LoggerFactory.getLogger(BondHomeStateDescriptionProvider.class);
 
@@ -89,7 +90,7 @@ public class BondHomeStateDescriptionProvider implements DynamicStateDescription
     public @Nullable StateDescription getStateDescription(Channel channel,
             @Nullable StateDescription originalStateDescription, @Nullable Locale locale) {
         StateDescription description = descriptions.get(channel.getUID());
-        logger.trace("Providing state description for channel {}", channel.getUID());
+        // logger.trace("Providing state description for channel {}", channel.getUID());
         return description;
     }
 }

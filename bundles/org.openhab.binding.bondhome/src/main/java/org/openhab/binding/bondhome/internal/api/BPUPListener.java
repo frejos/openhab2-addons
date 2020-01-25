@@ -255,28 +255,28 @@ public class BPUPListener extends Thread {
         return packetIsDuplicate;
     }
 
-    // private void datagramSocketHealthRoutine() {
-    // DatagramSocket datagramSocket = this.socket;
-    // if (datagramSocket != null) {
-    // if (datagramSocket.isClosed() || !datagramSocket.isConnected()) {
-    // logger.trace(
-    // "Datagram Socket is disconnected or has been closed (probably timed out), reconnecting...");
-    // try {
-    // // close the socket before trying to reopen
-    // datagramSocket.close();
-    // logger.trace("Old socket closed.");
-    // DatagramSocket s = new DatagramSocket(null);
-    // s.setReuseAddress(true);
-    // s.setBroadcast(true);
-    // s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
-    // s.bind(new InetSocketAddress(BOND_BPUP_PORT));
-    // this.socket = s;
-    // logger.trace("Datagram Socket reconnected.");
-    // } catch (SocketException exception) {
-    // logger.error("Problem creating one new socket on port {}. Error: {}", BOND_BPUP_PORT,
-    // exception.getLocalizedMessage());
-    // }
-    // }
-    // }
-    // }
+    private void datagramSocketHealthRoutine() {
+        DatagramSocket datagramSocket = this.socket;
+        if (datagramSocket != null) {
+            if (datagramSocket.isClosed() || !datagramSocket.isConnected()) {
+                logger.trace(
+                        "Datagram Socket is disconnected or has been closed (probably timed out), reconnecting...");
+                try {
+                    // close the socket before trying to reopen
+                    datagramSocket.close();
+                    logger.trace("Old socket closed.");
+                    DatagramSocket s = new DatagramSocket(null);
+                    s.setReuseAddress(true);
+                    s.setBroadcast(true);
+                    s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
+                    s.bind(new InetSocketAddress(BOND_BPUP_PORT));
+                    this.socket = s;
+                    logger.trace("Datagram Socket reconnected.");
+                } catch (SocketException exception) {
+                    logger.error("Problem creating one new socket on port {}. Error: {}", BOND_BPUP_PORT,
+                            exception.getLocalizedMessage());
+                }
+            }
+        }
+    }
 }

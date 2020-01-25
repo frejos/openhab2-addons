@@ -500,8 +500,8 @@ public class BondDeviceHandler extends BaseThingHandler {
                     }
 
                     logger.debug(
-                            "Based on Action {}, added channel {} ({}) to channel list with Channel UID {} and Channel Type UID {}",
-                            action.getActionId(), channel.toString(), channel.getLabel(), channel.getUID(),
+                            "Based on Action {}, added channel {} to channel list with Channel UID {} and Channel Type UID {}",
+                            action.getActionId(), channel.getLabel(), channel.getUID(),
                             channel.getChannelTypeUID());
                 }
             }
@@ -567,7 +567,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         // Add all the channels
         logger.trace("Saving the thing with all the new channels");
-        thingBuilder.withChannels(channels);
+        thingBuilder.withChannelGroupDefinitions(channels);
         updateThing(thingBuilder.build());
     }
 
