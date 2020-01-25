@@ -18,6 +18,7 @@ import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class BondBridgeHandler extends BaseBridgeHandler {
 
     private @NonNullByDefault({}) BondBridgeConfiguration config;
 
-    private final Set<BondDeviceHandler> handlers = new HashSet<>();
+    private final Set<BondDeviceHandler> handlers = Collections.synchronizedSet(new HashSet<>());
 
     public BondBridgeHandler(Bridge bridge) {
         super(bridge);
@@ -141,8 +142,8 @@ public class BondBridgeHandler extends BaseBridgeHandler {
     }
 
     private synchronized void startUDPListenerJob() {
-        logger.debug("Scheduled listener job to start in 5 seconds");
-        listenerJob = bondScheduler.schedule(udpListener, 5, TimeUnit.SECONDS);
+        logger.debug("Scheduled listener job to start in 30 seconds");
+        listenerJob = bondScheduler.schedule(udpListener, 30, TimeUnit.SECONDS);
     }
 
     private synchronized void stopUDPListenerJob() {

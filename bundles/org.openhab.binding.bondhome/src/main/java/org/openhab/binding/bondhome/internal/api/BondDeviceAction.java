@@ -12,14 +12,9 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
-import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
-
-import org.eclipse.smarthome.core.thing.Channel;
-import org.eclipse.smarthome.core.thing.ChannelUID;
-import org.eclipse.smarthome.core.thing.ThingUID;
-import org.eclipse.smarthome.core.thing.binding.builder.ChannelBuilder;
-import org.eclipse.smarthome.core.thing.type.ChannelKind;
-import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
+import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.bondhome.internal.BondChannelGroupType;
+import org.openhab.binding.bondhome.internal.BondChannelType;
 
 /**
  * This enum represents the possible device actions
@@ -32,17 +27,17 @@ public enum BondDeviceAction {
     // State Variables
     // power: (integer) 1 = on, 0 = off
     // Actions
-    TurnOn("TurnOn", CHANNEL_GROUP_BASIC, CHANNEL_POWER_STATE, "Switch"),
+    TurnOn("TurnOn", BondChannelGroupType.common, BondChannelType.power),
     // ^^ Turn device power on.
-    TurnOff("TurnOff", CHANNEL_GROUP_BASIC, CHANNEL_POWER_STATE, "Switch"),
+    TurnOff("TurnOff", BondChannelGroupType.common, BondChannelType.power),
     // ^^ Turn device power off.
-    TogglePower("TogglePower", CHANNEL_GROUP_BASIC, CHANNEL_POWER_STATE, "Switch"),
+    TogglePower("TogglePower", BondChannelGroupType.common, BondChannelType.power),
     // ^^ Change device power from on to off, or off to on.
 
     // State Variables
     // timer: (integer) seconds remaining on timer, or 0 meaning no timer running
     // Actions
-    SetTimer("SetTimer", CHANNEL_GROUP_BASIC, CHANNEL_TIMER, "Number"),
+    SetTimer("SetTimer", BondChannelGroupType.common, BondChannelType.timer),
     // ^^ Start timer for s seconds. If power if off, device is implicitly turned
     // on. If argument is zero, the timer is
     // canceled without turning off the device.
@@ -54,14 +49,14 @@ public enum BondDeviceAction {
     // last speed setting and the speed to
     // which the device resumes when user asks to turn on.
     // Actions
-    SetSpeed("SetSpeed", CHANNEL_GROUP_FAN, CHANNEL_FAN_SPEED, "Number"),
+    SetSpeed("SetSpeed", BondChannelGroupType.ceilingFan, BondChannelType.fanSpeed),
     // ^^ Set speed and turn on. If speed>max_speed, max_speed is assumed. If the
     // fan is off, implicitly turn on the
     // power. Setting speed to zero or a negative value is ignored.
-    IncreaseSpeed("IncreaseSpeed", CHANNEL_GROUP_FAN, CHANNEL_FAN_SPEED, "Number"),
+    IncreaseSpeed("IncreaseSpeed", BondChannelGroupType.ceilingFan, BondChannelType.fanSpeed),
     // ^^ Increase speed of fan by specified number of speeds. If the fan is off,
     // implicitly turn on the power.
-    DecreaseSpeed("DecreaseSpeed", CHANNEL_GROUP_FAN, CHANNEL_FAN_SPEED, "Number"),
+    DecreaseSpeed("DecreaseSpeed", BondChannelGroupType.ceilingFan, BondChannelType.fanSpeed),
     // ^^ Decrease fan speed by specified number of speeds. If attempting to
     // decrease fan speed below 1, the fan will
     // remain at speed 1. That is, power will not be implicitly turned off. If the
@@ -76,11 +71,11 @@ public enum BondDeviceAction {
     // var: (integer) sets the variability of the speed. 0 = minimum variation
     // (steady), 100 = maximum variation (gusty)
     // Actions
-    BreezeOn("BreezeOn", CHANNEL_GROUP_FAN, CHANNEL_FAN_BREEZE_STATE, "Switch"),
+    BreezeOn("BreezeOn", BondChannelGroupType.ceilingFan, BondChannelType.breezeState),
     // ^^ Enable breeze with remembered parameters. Defaults to [50,50].
-    BreezeOff("BreezeOff", CHANNEL_GROUP_FAN, CHANNEL_FAN_BREEZE_STATE, "Switch"),
+    BreezeOff("BreezeOff", BondChannelGroupType.ceilingFan, BondChannelType.breezeState),
     // ^^ Stop breeze. Fan remains on at current speed.
-    SetBreeze("SetBreeze", CHANNEL_GROUP_FAN, CHANNEL_FAN_BREEZE_MEAN, "Dimmer"),
+    SetBreeze("SetBreeze", BondChannelGroupType.ceilingFan, BondChannelType.breezeMean),
     // ^^ Enable breeze with specified parameters (same as breeze state variable).
     // Example SetBreeze([1, 20, 90]).
 
@@ -89,19 +84,19 @@ public enum BondDeviceAction {
     // The forward and reverse modes are sometimes called Summer and Winter,
     // respectively.
     // Actions
-    SetDirection("SetDirection", CHANNEL_GROUP_FAN, CHANNEL_FAN_DIRECTION, "String"),
+    SetDirection("SetDirection", BondChannelGroupType.ceilingFan, BondChannelType.direction),
     // ^^ Control forward and reverse.
-    ToggleDirection("ToggleDirection", CHANNEL_GROUP_FAN, CHANNEL_FAN_DIRECTION, "Switch"),
+    ToggleDirection("ToggleDirection", BondChannelGroupType.ceilingFan, BondChannelType.direction),
     // ^^ Reverse the direction of the fan.
 
     // State Variables
     // light: (integer) 1 = light on, 0 = light off
     // Actions
-    TurnLightOn("TurnLightOn", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_STATE, "Switch"),
+    TurnLightOn("TurnLightOn", BondChannelGroupType.light, BondChannelType.light),
     // ^^ Turn light on.
-    TurnLightOff("TurnLightOff", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_STATE, "Switch"),
+    TurnLightOff("TurnLightOff", BondChannelGroupType.light, BondChannelType.light),
     // ^^ Turn off light.
-    ToggleLight("ToggleLight", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_STATE, "Switch"),
+    ToggleLight("ToggleLight", BondChannelGroupType.light, BondChannelType.light),
     // ^^ Change light from on to off, or off to on.
 
     // State Variables
@@ -113,17 +108,17 @@ public enum BondDeviceAction {
     // that the device is always ready to
     // respond to a TurnLightOn request.
     // Actions
-    TurnUpLightOn("TurnUpLightOn", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_STATE, "Switch"),
+    TurnUpLightOn("TurnUpLightOn", BondChannelGroupType.upLight, BondChannelType.upLight),
     // ^^ Turn up light on.
-    TurnDownLightOn("TurnDownLightOn", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_STATE, "Switch"),
+    TurnDownLightOn("TurnDownLightOn", BondChannelGroupType.downLight, BondChannelType.downLight),
     // ^^ Turn down light on.
-    TurnUpLightOff("TurnUpLightOff", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_STATE, "Switch"),
+    TurnUpLightOff("TurnUpLightOff", BondChannelGroupType.upLight, BondChannelType.upLight),
     // ^^ Turn off up light.
-    TurnDownLightOff("TurnDownLightOff", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_STATE, "Switch"),
+    TurnDownLightOff("TurnDownLightOff", BondChannelGroupType.downLight, BondChannelType.downLight),
     // ^^ Turn off down light.
-    ToggleUpLight("ToggleUpLight", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_STATE, "Switch"),
+    ToggleUpLight("ToggleUpLight", BondChannelGroupType.upLight, BondChannelType.upLight),
     // ^^ Change up light from on to off, or off to on.
-    ToggleDownLight("ToggleDownLight", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_STATE, "Switch"),
+    ToggleDownLight("ToggleDownLight", BondChannelGroupType.downLight, BondChannelType.downLight),
     // ^^ Change down light from on to off, or off to on.
 
     // State Variables
@@ -133,13 +128,12 @@ public enum BondDeviceAction {
     // fan has no dimmer or a non-stateful
     // dimmer, brightness is always 100.
     // Actions
-    SetBrightness("SetBrightness", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_BRIGHTNESS, "Dimmer"),
+    SetBrightness("SetBrightness", BondChannelGroupType.light, BondChannelType.brightness),
     // ^^ Set the brightness of the light to specified percentage. Value of 0 is
     // ignored, use TurnLightOff instead.
-    IncreaseBrightness("IncreaseBrightness", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_BRIGHTNESS, "Dimmer"),
-    // ^^ Increase brightness of light by specified percentage. If light is off, it
+    IncreaseBrightness("IncreaseBrightness", BondChannelGroupType.light, BondChannelType.brightness),
     // will be turned on at (0 + amount).
-    DecreaseBrightness("DecreaseBrightness", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_BRIGHTNESS, "Dimmer"),
+    DecreaseBrightness("DecreaseBrightness", BondChannelGroupType.light, BondChannelType.brightness),
     // ^^ Decrease light brightness by specified percentage. If attempting to
     // decrease brightness below 1%, light will
     // remain at 1%. Use TurnLightOff to turn off the light. If the light is off,
@@ -147,26 +141,27 @@ public enum BondDeviceAction {
     // remembered brightness will be decreased.
 
     // State Variables
-    // upLightBrightness: (integer) percentage value of up light brightness,
+    // up_light_brightness: (integer) percentage value of up light brightness,
     // 1-100.
-    // downLightBrightness: (integer) percentage value of down light brightness,
+    // down_light_brightness: (integer) percentage value of down light brightness,
     // 1-100.
     // Actions
-    SetUpLightBrightness("SetUpLightBrightness", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_BRIGHTNESS, "Dimmer"),
+    SetUpLightBrightness("SetUpLightBrightness", BondChannelGroupType.upLight, BondChannelType.upLightBrightness),
     // ^^ Similar to SetBrightness but only for the up light.
-    SetDownLightBrightness("SetDownLightBrightness", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_BRIGHTNESS, "Dimmer"),
+    SetDownLightBrightness("SetDownLightBrightness", BondChannelGroupType.downLight,
+            BondChannelType.downLightBrightness),
     // ^^ Similar to SetBrightness but only for the down light.
-    IncreaseUpLightBrightness("IncreaseUpLightBrightness", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_BRIGHTNESS,
-            "Dimmer"),
+    IncreaseUpLightBrightness("IncreaseUpLightBrightness", BondChannelGroupType.upLight,
+            BondChannelType.upLightBrightness),
     // ^^ Similar to IncreaseBrightness but only for the up light.
-    IncreaseDownLightBrightness("IncreaseDownLightBrightness", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_BRIGHTNESS,
-            "Dimmer"),
+    IncreaseDownLightBrightness("IncreaseDownLightBrightness", BondChannelGroupType.downLight,
+            BondChannelType.downLightBrightness),
     // ^^ Similar to IncreaseBrightness but only for the down light.
-    DecreaseUpLightBrightness("DecreaseUpLightBrightness", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_BRIGHTNESS,
-            "Dimmer"),
+    DecreaseUpLightBrightness("DecreaseUpLightBrightness", BondChannelGroupType.upLight,
+            BondChannelType.upLightBrightness),
     // ^^ Similar to DecreaseBrightness but only for the up light.
-    DecreaseDownLightBrightness("DecreaseDownLightBrightness", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_BRIGHTNESS,
-            "Dimmer"),
+    DecreaseDownLightBrightness("DecreaseDownLightBrightness", BondChannelGroupType.downLight,
+            BondChannelType.downLightBrightness),
     // ^^ Similar to DecreaseBrightness but only for the down light.
 
     // State Variables
@@ -174,18 +169,18 @@ public enum BondDeviceAction {
     // flame setting and the flame to which
     // the device resumes when user asks to turn on.
     // Actions
-    SetFlame("SetFlame", CHANNEL_GROUP_FIREPLACE, CHANNEL_FLAME, "Dimmer"),
+    SetFlame("SetFlame", BondChannelGroupType.fireplace, BondChannelType.flame),
     // ^^ Set flame and turn on. If flame>100, 100 is assumed. If the fireplace is
     // off, implicitly turn on the power.
     // Setting flame to zero or a negative value is ignored.
-    IncreaseFlame("IncreaseFlame", CHANNEL_GROUP_FIREPLACE, CHANNEL_FLAME, "Dimmer"),
+    IncreaseFlame("IncreaseFlame", BondChannelGroupType.fireplace, BondChannelType.flame),
     // ^^ Increase flame level of fireplace by specified number of flames. If the
     // fireplace is off, implicitly turn on
     // the power.
-    DecreaseFlame("DecreaseFlame", CHANNEL_GROUP_FIREPLACE, CHANNEL_FLAME, "Dimmer"),
+    DecreaseFlame("DecreaseFlame", BondChannelGroupType.fireplace, BondChannelType.flame),
     // ^^ Decrease flame level by specified number of flames. If attempting to
     // decrease fireplace flame below 1, the
-    // fireplace will remain at fflame 1. That is, power will not be implicitly
+    // fireplace will remain at flame 1. That is, power will not be implicitly
     // turned off. If the power is already off,
     // DecreaseFlame is ignored.
 
@@ -193,68 +188,62 @@ public enum BondDeviceAction {
     // fpfan_power: (integer) 1 = on, 0 = off
     // fpfan_speed: (integer) from 1-100
     // Actions
-    TurnFpFanOff("TurnFpFanOff", CHANNEL_GROUP_FIREPLACE, CHANNEL_FP_FAN_STATE, "Switch"),
+    TurnFpFanOff("TurnFpFanOff", BondChannelGroupType.fireplace, BondChannelType.fpFanPower),
     // ^^ Turn the fireplace fan off
-    TurnFpFanOn("TurnFpFanOn", CHANNEL_GROUP_FIREPLACE, CHANNEL_FP_FAN_STATE, "Switch"),
+    TurnFpFanOn("TurnFpFanOn", BondChannelGroupType.fireplace, BondChannelType.fpFanPower),
     // ^^ Turn the fireplace fan on, restoring the previous speed
-    SetFpFan("SetFpFan", CHANNEL_GROUP_FIREPLACE, CHANNEL_FP_FAN_SPEED, "Dimmer"),
+    SetFpFan("SetFpFan", BondChannelGroupType.fireplace, BondChannelType.fpFanSpeed),
     // ^^ Sets the speed of the fireplace fan
 
     // State Variables
     // open: (integer) 1 = open, 0 = closed
     // Actions
-    Open("Open", CHANNEL_GROUP_SHADES, CHANNEL_OPEN_CLOSE, "Switch"),
+    Open("Open", BondChannelGroupType.shade, BondChannelType.openShade),
     // ^^ Open the device.
-    Close("Close", CHANNEL_GROUP_SHADES, CHANNEL_OPEN_CLOSE, "Switch"),
+    Close("Close", BondChannelGroupType.shade, BondChannelType.openShade),
     // ^^ Close the device.
-    ToggleOpen("ToggleOpen", CHANNEL_GROUP_SHADES, CHANNEL_OPEN_CLOSE, "Switch"),
+    ToggleOpen("ToggleOpen", BondChannelGroupType.shade, BondChannelType.openShade),
     // ^^ Close the device if it's open, open it if it's closed
 
     // Other actions
-    Stop("Stop", "", "", ""),
+    Stop("Stop", BondChannelGroupType.common, null),
     // ^^ This action tells the Bond to stop any in-progress transmission and empty
     // its transmission queue.
-    Hold("Hold", "", "", ""),
+    Hold("Hold", BondChannelGroupType.common, null),
     // ^^ Can be used when a signal is required to tell a device to stop moving or
     // the like, since Stop is a special
     // "stop transmitting" action
-    Pair("Pair", "", "", ""),
+    Pair("Pair", BondChannelGroupType.common, null),
     // ^^ Used in devices that need to be paired with a receiver.
-    StartDimmer("StartDimmer", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_START_STOP, "Switch"),
+    StartDimmer("StartDimmer", BondChannelGroupType.light, BondChannelType.dimmerStartStop),
     // ^^ Start dimming. The Bond should time out its transmission after 30 seconds,
     // or when the Stop action is called.
-    StartUpLightDimmer("StartUpLightDimmer", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_START_STOP, "Switch"),
+    StartUpLightDimmer("StartUpLightDimmer", BondChannelGroupType.upLight, BondChannelType.upLightDimmerStartStop),
     // ^^ Use this and the StartDownLightDimmer instead of StartDimmer if your
     // device has two dimmable lights.
-    StartDownLightDimmer("StartDownLightDimmer", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_START_STOP, "Switch"),
+    StartDownLightDimmer("StartDownLightDimmer", BondChannelGroupType.downLight,
+            BondChannelType.downLightDimmerStartStop),
     // ^^ The counterpart to StartUpLightDimmer
-    StartIncreasingBrightness("StartIncreasingBrightness", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_DIRECTIONAL_INC,
-            "Switch"),
-    StartDecreasingBrightness("StartDecreasingBrightness", CHANNEL_GROUP_LIGHT, CHANNEL_LIGHT_DIRECTIONAL_DECR,
-            "Switch"),
+    StartIncreasingBrightness("StartIncreasingBrightness", BondChannelGroupType.light, BondChannelType.dimmerIncr),
+    StartDecreasingBrightness("StartDecreasingBrightness", BondChannelGroupType.light, BondChannelType.dimmerDcr),
 
     // More actions
-    OEMRandom("OEMRandom", "", "", ""),
-    OEMTimer("OEMTimer", "", "", ""),
-    Unknown("Unknown", "", "", "");
+    OEMRandom("OEMRandom", BondChannelGroupType.common, null),
+    OEMTimer("OEMTimer", BondChannelGroupType.common, null),
+    Unknown("Unknown", BondChannelGroupType.common, null);
 
     private String actionId;
-    String channelId;
-    String channelGroupId;
-    String acceptedItemType;
-    ChannelTypeUID channelTypeUID;
+    private BondChannelGroupType bondChannelGroupType;
+    private @Nullable BondChannelType bondChannelType;
 
-    private BondDeviceAction(final String actionId, String channelGroupId, String channelId, String acceptedItemType) {
+    private BondDeviceAction(final String actionId, BondChannelGroupType bondChannelGroupType,
+            @Nullable BondChannelType bondChannelType) {
         this.actionId = actionId;
-        this.channelGroupId = channelGroupId;
-        this.channelId = channelId;
-        this.acceptedItemType = acceptedItemType;
-        this.channelTypeUID = new ChannelTypeUID(BINDING_ID, channelId + "Type");
+        this.bondChannelGroupType = bondChannelGroupType;
+        this.bondChannelType = bondChannelType;
     }
 
     /**
-     * Gets the action ID for request action
-     *
      * @return the actionId
      */
     public String getActionId() {
@@ -262,47 +251,25 @@ public enum BondDeviceAction {
     }
 
     /**
-     * Creates and returns a {@link Channel}
-     *
-     * @return the {@link Channel}
+     * @return the bondChannelGroup
      */
-    public Channel createChannel(ThingUID thingUID) {
-        ChannelUID channelUid = new ChannelUID(thingUID, channelGroupId, channelId);
-        Channel channel = ChannelBuilder.create(channelUid, acceptedItemType).withKind(ChannelKind.STATE)
-                .withType(channelTypeUID).build();
-        return channel;
+    public BondChannelGroupType getBondChannelGroupType() {
+        return bondChannelGroupType;
     }
 
     /**
-     * Creates and returns a {@link ChannelUID}
-     *
-     * @return the {@link ChannelUID}
+     * @return the bondChannel
      */
-    public ChannelUID createChannelUid(ThingUID thingUID) {
-        ChannelUID channelUid = new ChannelUID(thingUID, channelGroupId, channelId);
-        return channelUid;
+    public @Nullable BondChannelType getBondChannelType() {
+        return bondChannelType;
     }
 
-    /**
-     * Gets the channel ID for the first channel associated with the action
-     *
-     * @return the channel ID as a String
-     */
-    public String getChannelId() {
-        return channelId;
+    public String getGroupTypeId() {
+        return bondChannelGroupType.getGroupTypeId();
     }
 
-    /**
-     * @return the acceptedItemType as a String
-     */
-    public String getAcceptedItemType() {
-        return acceptedItemType;
+    public String getChannelGroupId() {
+        return bondChannelGroupType.getGroupTypeId();
     }
 
-    /**
-     * @return the channelTypeUID as a String
-     */
-    public ChannelTypeUID getChannelTypeUID() {
-        return channelTypeUID;
-    }
 }

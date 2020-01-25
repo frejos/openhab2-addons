@@ -16,29 +16,27 @@ import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.Bridge;
-import org.eclipse.smarthome.core.thing.Channel;
-import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
-import org.eclipse.smarthome.core.thing.type.DynamicStateDescriptionProvider;
-import org.eclipse.smarthome.core.types.StateDescription;
 import org.openhab.binding.bondhome.internal.discovery.BondDiscoveryService;
 import org.openhab.binding.bondhome.internal.handler.BondBridgeHandler;
 import org.openhab.binding.bondhome.internal.handler.BondDeviceHandler;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,15 +48,46 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 @Component(configurationPid = "binding.bondhome", service = ThingHandlerFactory.class)
-public class BondHomeHandlerFactory extends BaseThingHandlerFactory implements DynamicStateDescriptionProvider {
+public class BondHomeHandlerFactory extends BaseThingHandlerFactory {
     private Logger logger = LoggerFactory.getLogger(BondHomeHandlerFactory.class);
 
+    private @NonNullByDefault({}) BondHomeStateDescriptionProvider stateDescriptionProvider;
+    private @NonNullByDefault({}) BondHomeTypeProvider typeProvider;
     private Map<ThingUID, ServiceRegistration<?>> discoveryServiceRegs = new HashMap<>();
-    private final Map<ChannelUID, StateDescription> descriptions = new ConcurrentHashMap<>();
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_BRIDGE_TYPES.contains(thingTypeUID) || SUPPORTED_DEVICE_TYPES.contains(thingTypeUID);
+    }
+
+    @Activate
+    @Override
+    protected void activate(ComponentContext componentContext) {
+        super.activate(componentContext);
+    }
+
+    @Deactivate
+    @Override
+    protected void deactivate(ComponentContext componentContext) {
+        super.deactivate(componentContext);
+    }
+
+    @Reference
+    protected void setStateDescriptionProvider(BondHomeStateDescriptionProvider stateDescription) {
+        this.stateDescriptionProvider = stateDescription;
+    }
+
+    protected void unsetStateDescriptionProvider(BondHomeStateDescriptionProvider stateDescription) {
+        this.stateDescriptionProvider = null;
+    }
+
+    @Reference
+    protected void setTypeProvider(BondHomeTypeProvider provider) {
+        this.typeProvider = provider;
+    }
+
+    protected void unsetTypeProvider(BondHomeTypeProvider provider) {
+        this.typeProvider = null;
     }
 
     @Override
@@ -72,7 +101,7 @@ public class BondHomeHandlerFactory extends BaseThingHandlerFactory implements D
             return handler;
         } else if (SUPPORTED_DEVICE_TYPES.contains(thingTypeUID)) {
             logger.trace("Creating handler for Bond device");
-            return new BondDeviceHandler(thing, this);
+            return new BondDeviceHandler(thing, typeProvider, stateDescriptionProvider);
         }
 
         return null;
@@ -94,57 +123,5 @@ public class BondHomeHandlerFactory extends BaseThingHandlerFactory implements D
         BondDiscoveryService discoveryService = new BondDiscoveryService(bridgeHandler);
         discoveryServiceRegs.put(bridgeHandler.getThing().getUID(), bundleContext
                 .registerService(DiscoveryService.class.getName(), discoveryService, new Hashtable<String, Object>()));
-    }
-
-    /**
-     * Set a state description for a channel. This description will be used when
-     * preparing the channel state by the framework for presentation. A previous
-     * description, if existed, will be replaced.
-     *
-     * @param channelUID channel UID
-     * @param description state description for the channel
-     */
-    public void setDescription(ChannelUID channelUID, StateDescription description) {
-        logger.debug("Adding state description for channel {}", channelUID);
-        descriptions.put(channelUID, description);
-    }
-
-    /**
-     * Clear all registered state descriptions
-     */
-    void removeAllDescriptions() {
-        logger.debug("Removing all state descriptions");
-        descriptions.clear();
-    }
-
-    /**
-     * Removes a state description for a given channel ID
-     *
-     * @param channelUID channel ID to remove description for
-     */
-    void removeDescription(ChannelUID channelUID) {
-        logger.debug("Removing state description for channel {}", channelUID);
-        descriptions.remove(channelUID);
-    }
-
-    /**
-     * Removes the state descriptions tied to a specific thing
-     *
-     * @param channelUID channel ID to remove description for
-     */
-    public void removeDescriptionsForThing(ThingUID uid) {
-        for (ChannelUID c : descriptions.keySet()) {
-            if (c.getThingUID() == uid) {
-                descriptions.remove(c);
-            }
-        }
-    }
-
-    @Override
-    public @Nullable StateDescription getStateDescription(Channel channel,
-            @Nullable StateDescription originalStateDescription, @Nullable Locale locale) {
-        StateDescription description = descriptions.get(channel.getUID());
-        logger.trace("Providing state description for channel {}", channel.getUID());
-        return description;
     }
 }
