@@ -41,6 +41,7 @@
 		<label>Up Light</label>
 		<channels>
 			<channel id="upLight" typeId="upLightChannelType" />
+			<channel id="upLightEnable" typeId="upLightEnableChannelType" />
 			<channel id="upLightBrightness" typeId="upLightBrightnessChannelType" />
 			<channel id="upLightDimmerStartStop" typeId="upLightDimmerStartStopChannelType" />
 			<channel id="upLightDimmerIncr" typeId="upLightDimmerIncrChannelType" />
@@ -52,6 +53,7 @@
 		<label>Down Light</label>
 		<channels>
 			<channel id="downLight" typeId="downLightChannelType" />
+			<channel id="downLightEnable" typeId="downLightEnableChannelType" />
 			<channel id="downLightBrightness" typeId="downLightBrightnessChannelType" />
 			<channel id="downLightDimmerStartStop" typeId="downLightDimmerStartStopChannelType" />
 			<channel id="downLightDimmerIncr" typeId="downLightDimmerIncrChannelType" />

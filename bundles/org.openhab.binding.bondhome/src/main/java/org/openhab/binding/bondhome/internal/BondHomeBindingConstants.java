@@ -77,6 +77,7 @@ public class BondHomeBindingConstants {
 
     public static final String CHANNEL_GROUP_UP_LIGHT = "upLightChannels";
     public static final String CHANNEL_UP_LIGHT_STATE = "upLightChannels#upLight";
+    public static final String CHANNEL_UP_LIGHT_ENABLE = "upLightChannels#upLightEnable";
     public static final String CHANNEL_UP_LIGHT_BRIGHTNESS = "upLightChannels#upLightBrightness";
     public static final String CHANNEL_UP_LIGHT_START_STOP = "upLightChannels#upLightDimmerStartStop";
     public static final String CHANNEL_UP_LIGHT_DIRECTIONAL_INC = "upLightChannels#upLightDimmerIncr";
@@ -84,6 +85,7 @@ public class BondHomeBindingConstants {
 
     public static final String CHANNEL_GROUP_DOWN_LIGHT = "downLightChannels";
     public static final String CHANNEL_DOWN_LIGHT_STATE = "downLightChannels#downLight";
+    public static final String CHANNEL_DOWN_LIGHT_ENABLE = "downLightChannels#downLightEnable";
     public static final String CHANNEL_DOWN_LIGHT_BRIGHTNESS = "downLightChannels#downLightBrightness";
     public static final String CHANNEL_DOWN_LIGHT_START_STOP = "downLightChannels#downLightDimmerStartStop";
     public static final String CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC = "downLightChannels#downLightDimmerIncr";

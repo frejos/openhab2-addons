@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
@@ -104,16 +103,15 @@ public class BPUPListener extends Thread {
         byte[] buffer = new byte[256];
         DatagramPacket inPacket = new DatagramPacket(buffer, buffer.length);
 
-        logger.trace("Sending keep-alive request ('\\n')");
+        DatagramSocket sock = this.socket;
+        if (sock != null)
+            logger.trace("Sending keep-alive request ('\\n')");
         try {
             byte[] outBuffer = { (byte) '\n' };
             InetAddress inetAddress = InetAddress.getByName(bridgeHandler.getBridgeIpAddress());
             DatagramPacket outPacket = new DatagramPacket(outBuffer, 1, inetAddress, BOND_BPUP_PORT);
-            DatagramSocket sKA = new DatagramSocket(null);
-            sKA.setSoTimeout(1000);
-            sKA.send(outPacket);
-            sKA.receive(inPacket);
-            sKA.close();
+            sock.send(outPacket);
+            sock.receive(inPacket);
             BPUPUpdate response = transformUpdatePacket(inPacket);
             if (response != null) {
                 if (!response.bondId.equalsIgnoreCase(bridgeHandler.getBridgeId())) {
@@ -132,17 +130,13 @@ public class BPUPListener extends Thread {
         try {
             DatagramSocket s = new DatagramSocket(null);
             s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
-            s.setReuseAddress(true);
-            s.setBroadcast(true);
-            InetSocketAddress address = new InetSocketAddress(BOND_BPUP_PORT);
-            s.bind(address);
+            s.bind(null);
             socket = s;
-            logger.debug("Listener created UDP socket on port {} with timeout {}", BOND_BPUP_PORT,
+            logger.debug("Listener created UDP socket on port {} with timeout {}", s.getPort(),
                     SOCKET_TIMEOUT_MILLISECONDS);
         } catch (SocketException e) {
             logger.debug("Listener got SocketException: {}", e.getMessage(), e);
-            socket = null;
-            return;
+            datagramSocketHealthRoutine();
         }
 
         // Create a buffer and packet for the response
@@ -155,27 +149,8 @@ public class BPUPListener extends Thread {
             long now = System.currentTimeMillis();
             long timePassedFromLastKeepAlive = now - timeOfLastKeepAlivePacket;
 
-            // logger.trace("Time since last keep alive: {}", timePassedFromLastKeepAlive);
             if (timeOfLastKeepAlivePacket == -1 || timePassedFromLastKeepAlive >= 60000L) {
-                logger.trace("Sending keep-alive request ('\\n')");
-                try {
-                    byte[] outBuffer = { (byte) '\n' };
-                    InetAddress inetAddress = InetAddress.getByName(bridgeHandler.getBridgeIpAddress());
-                    DatagramPacket outPacket = new DatagramPacket(outBuffer, 1, inetAddress, BOND_BPUP_PORT);
-                    sock.send(outPacket);
-                    sock.receive(inPacket);
-                    BPUPUpdate response = transformUpdatePacket(inPacket);
-                    if (response != null) {
-                        if (!response.bondId.equalsIgnoreCase(bridgeHandler.getBridgeId())) {
-                            logger.warn("Reponse isn't from expected Bridge!  Expected: {}  Got: {}",
-                                    bridgeHandler.getBridgeId(), response.bondId);
-                        }
-                    }
-                } catch (SocketTimeoutException e) {
-                    logger.trace("BPUP Socket timeout");
-                } catch (IOException e) {
-                    logger.debug("One exception has occurred: {} ", e.getMessage());
-                }
+                sendBPUPKeepAlive();
                 timeOfLastKeepAlivePacket = now;
             }
 
@@ -183,10 +158,10 @@ public class BPUPListener extends Thread {
                 sock.receive(inPacket);
                 processPacket(inPacket);
             } catch (SocketTimeoutException e) {
-                // Nothing to do on socket timeout
+                // logger.trace("BPUP Socket timeout x");
             } catch (IOException e) {
                 logger.debug("Listener got IOException waiting for datagram: {}", e.getMessage());
-                // datagramSocketHealthRoutine(sock);
+                datagramSocketHealthRoutine();
                 // this.socket = null;
             }
         }
@@ -210,7 +185,12 @@ public class BPUPListener extends Thread {
             }
 
             // Send the update the the bridge for it to pass on to the devices
-            bridgeHandler.forwardUpdateToThing(update);
+            if (update.topic != null) {
+                logger.trace("Forwarding message to bridge handler");
+                bridgeHandler.forwardUpdateToThing(update);
+            } else {
+                logger.debug("No topic in incoming message!");
+            }
         }
     }
 
@@ -222,7 +202,7 @@ public class BPUPListener extends Thread {
      */
     public @Nullable BPUPUpdate transformUpdatePacket(final DatagramPacket packet) {
         String responseJson = new String(packet.getData(), 0, packet.getLength());
-        logger.debug("Response from {} -> {}", packet.getAddress().getHostAddress(), responseJson);
+        logger.debug("Message from {}:{} -> {}", packet.getAddress().getHostAddress(), packet.getPort(), responseJson);
 
         @Nullable
         BPUPUpdate response = null;
@@ -249,28 +229,24 @@ public class BPUPListener extends Thread {
         return packetIsDuplicate;
     }
 
-    private void datagramSocketHealthRoutine(DatagramSocket datagramSocket) {
-        if (datagramSocket.isClosed() || !datagramSocket.isConnected()) {
-            logger.trace("Datagram Socket is disconnected or has been closed (probably timed out), reconnecting...");
+    private void datagramSocketHealthRoutine() {
+        DatagramSocket datagramSocket = this.socket;
+        if (datagramSocket == null
+                || (datagramSocket != null && (datagramSocket.isClosed() || !datagramSocket.isConnected()))) {
+            logger.trace("Datagram Socket is disconnected or has been closed, reconnecting...");
             try {
                 // close the socket before trying to reopen
-                datagramSocket.close();
+                if (datagramSocket != null) {
+                    datagramSocket.close();
+                }
                 logger.trace("Old socket closed.");
-                // DatagramSocket s = new DatagramSocket(null);
-                // s.setReuseAddress(true);
-                // s.setBroadcast(true);
-                // s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
-                // s.bind(new InetSocketAddress(BOND_BPUP_PORT));
-                // datagramSocket = s;
-                datagramSocket = new DatagramSocket(null);
-                datagramSocket.setReuseAddress(true);
-                datagramSocket.setBroadcast(true);
-                datagramSocket.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
-                datagramSocket.bind(new InetSocketAddress(BOND_BPUP_PORT));
-                logger.trace("Datagram Socket reconnected.");
+                DatagramSocket s = new DatagramSocket(null);
+                s.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
+                s.bind(null);
+                this.socket = s;
+                logger.trace("Datagram Socket reconnected using port {}.", s.getPort());
             } catch (SocketException exception) {
-                logger.error("Problem creating one new socket on port {}. Error: {}", BOND_BPUP_PORT,
-                        exception.getLocalizedMessage());
+                logger.error("Problem creating new socket : {}", exception.getLocalizedMessage());
             }
         }
     }

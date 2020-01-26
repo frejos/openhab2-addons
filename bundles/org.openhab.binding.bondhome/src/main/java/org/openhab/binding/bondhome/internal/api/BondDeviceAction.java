@@ -108,9 +108,9 @@ public enum BondDeviceAction {
     // that the device is always ready to
     // respond to a TurnLightOn request.
     // Actions
-    TurnUpLightOn("TurnUpLightOn", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_STATE),
+    TurnUpLightOn("TurnUpLightOn", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_ENABLE),
     // ^^ Turn up light on.
-    TurnDownLightOn("TurnDownLightOn", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_STATE),
+    TurnDownLightOn("TurnDownLightOn", CHANNEL_GROUP_DOWN_LIGHT, CHANNEL_DOWN_LIGHT_ENABLE),
     // ^^ Turn down light on.
     TurnUpLightOff("TurnUpLightOff", CHANNEL_GROUP_UP_LIGHT, CHANNEL_UP_LIGHT_STATE),
     // ^^ Turn off up light.

@@ -117,7 +117,18 @@
 
 	<channel-type id="upLightChannelType" advanced="false">
 		<item-type>Switch</item-type>
-		<label>Up Light Enable</label>
+		<label>Up Light</label>
+		<description>Turns on the up light.</description>
+		<category>Light</category>
+		<tags>
+			<tag>Lighting</tag>
+			<tag>Switchable</tag>
+		</tags>
+	</channel-type>
+
+	<channel-type id="upLightEnableChannelType" advanced="false">
+		<item-type>Switch</item-type>
+		<label>Enable Up Light</label>
 		<description>Enables or disables the up light of the ceiling fan. The light must also be on to turn on the up light.</description>
 		<category>Light</category>
 		<tags>
@@ -168,6 +179,17 @@
 	</channel-type>
 
 	<channel-type id="downLightChannelType" advanced="false">
+		<item-type>Switch</item-type>
+		<label>Down Light</label>
+		<description>Turns on the down light.</description>
+		<category>Light</category>
+		<tags>
+			<tag>Lighting</tag>
+			<tag>Switchable</tag>
+		</tags>
+	</channel-type>
+
+	<channel-type id="downLightEnableChannelType" advanced="false">
 		<item-type>Switch</item-type>
 		<label>Enable Down Light</label>
 		<description>Enables or disables the down light of the ceiling fan. The light must also be on to turn on the down

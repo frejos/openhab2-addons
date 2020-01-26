@@ -238,10 +238,21 @@ public class BondDeviceHandler extends BaseThingHandler {
                     }, 30, TimeUnit.SECONDS);
                     break;
 
-                case CHANNEL_UP_LIGHT_STATE:
+                case CHANNEL_UP_LIGHT_ENABLE:
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.TurnUpLightOn : BondDeviceAction.TurnUpLightOff,
                             null);
+                    break;
+
+                case CHANNEL_UP_LIGHT_STATE:
+                    // To turn on the up light, we first have to enable it and then turn on the lights
+                    if (command == OnOffType.ON) {
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnUpLightOn, null);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOn, null);
+                    } else {
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnUpLightOn, null);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOff, null);
+                    }
                     break;
 
                 case CHANNEL_UP_LIGHT_BRIGHTNESS:
@@ -280,9 +291,20 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.info("Bi-direction brightness control for up-lights not yet enabled!");
                     break;
 
-                case CHANNEL_DOWN_LIGHT_STATE:
+                case CHANNEL_DOWN_LIGHT_ENABLE:
                     api.executeDeviceAction(config.deviceId, command == OnOffType.ON ? BondDeviceAction.TurnDownLightOn
                             : BondDeviceAction.TurnDownLightOff, null);
+                    break;
+
+                case CHANNEL_DOWN_LIGHT_STATE:
+                    // To turn on the down light, we first have to enable it and then turn on the lights
+                    if (command == OnOffType.ON) {
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnDownLightOn, null);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOn, null);
+                    } else {
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnDownLightOn, null);
+                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOff, null);
+                    }
                     break;
 
                 case CHANNEL_DOWN_LIGHT_BRIGHTNESS:
@@ -532,10 +554,13 @@ public class BondDeviceHandler extends BaseThingHandler {
             int value = 1;
             BondDeviceProperties devProperties = this.deviceProperties;
             if (devProperties != null) {
-                int maxSpeed = devProperties.max_speed;
-                value = (int) Math.ceil((updateState.speed / maxSpeed) * 100);
+                double maxSpeed = devProperties.max_speed;
+                value = (int) (((double) updateState.speed / maxSpeed) * 100);
+                logger.trace("Raw fan speed: {}, Percent: {}", updateState.speed, value);
+            } else{
+                logger.trace("Unable to convert fan speed to a percent!");
             }
-            updateState(CHANNEL_FAN_SPEED, new DecimalType(value));
+            updateState(CHANNEL_FAN_SPEED, new PercentType(value));
             updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_FAN_BREEZE_MEAN, new DecimalType(updateState.breeze[1]));
             updateState(CHANNEL_FAN_BREEZE_VAR, new DecimalType(updateState.breeze[2]));
@@ -546,10 +571,14 @@ public class BondDeviceHandler extends BaseThingHandler {
             updateState(CHANNEL_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_LIGHT_BRIGHTNESS, new DecimalType(updateState.brightness));
 
-            updateState(CHANNEL_UP_LIGHT_STATE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_UP_LIGHT_ENABLE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_UP_LIGHT_STATE,
+                    (updateState.up_light > 0 && updateState.light > 0) ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_UP_LIGHT_BRIGHTNESS, new DecimalType(updateState.upLightBrightness));
 
-            updateState(CHANNEL_DOWN_LIGHT_STATE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_DOWN_LIGHT_ENABLE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_DOWN_LIGHT_STATE,
+                    (updateState.down_light > 0 && updateState.light > 0) ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_DOWN_LIGHT_BRIGHTNESS, new DecimalType(updateState.downLightBrightness));
 
             updateState(CHANNEL_FLAME, new DecimalType(updateState.flame));
@@ -569,6 +598,7 @@ public class BondDeviceHandler extends BaseThingHandler {
             updateState(CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC, OnOffType.OFF);
             updateState(CHANNEL_DOWN_LIGHT_DIRECTIONAL_DECR, OnOffType.OFF);
             updateState(CHANNEL_STOP, OnOffType.OFF);
+            updateState(CHANNEL_HOLD, OnOffType.OFF);
 
         } else {
             logger.debug("No state information provided to update channels with");
