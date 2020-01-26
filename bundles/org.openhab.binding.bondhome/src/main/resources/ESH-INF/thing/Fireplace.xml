@@ -13,6 +13,11 @@
 		<label>Bond Home Fireplace</label>
 		<description>An RF or IR remote controlled fireplace with or without a fan</description>
 
+		<channel-groups>
+			<channel-group id="commonChannels" typeId="commonChannelGroup" />
+			<channel-group id="fireplaceChannels" typeId="ceilingFanChannelGroup" />
+		</channel-groups>
+
 		<representation-property>deviceId</representation-property>
 
 		<config-description-ref uri="bondhome:bonddevice:config" />

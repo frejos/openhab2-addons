@@ -32,11 +32,7 @@ import org.openhab.binding.bondhome.internal.discovery.BondDiscoveryService;
 import org.openhab.binding.bondhome.internal.handler.BondBridgeHandler;
 import org.openhab.binding.bondhome.internal.handler.BondDeviceHandler;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,43 +47,11 @@ import org.slf4j.LoggerFactory;
 public class BondHomeHandlerFactory extends BaseThingHandlerFactory {
     private Logger logger = LoggerFactory.getLogger(BondHomeHandlerFactory.class);
 
-    private @NonNullByDefault({}) BondHomeStateDescriptionProvider stateDescriptionProvider;
-    private @NonNullByDefault({}) BondHomeTypeProvider typeProvider;
     private Map<ThingUID, ServiceRegistration<?>> discoveryServiceRegs = new HashMap<>();
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_BRIDGE_TYPES.contains(thingTypeUID) || SUPPORTED_DEVICE_TYPES.contains(thingTypeUID);
-    }
-
-    @Activate
-    @Override
-    protected void activate(ComponentContext componentContext) {
-        super.activate(componentContext);
-    }
-
-    @Deactivate
-    @Override
-    protected void deactivate(ComponentContext componentContext) {
-        super.deactivate(componentContext);
-    }
-
-    @Reference
-    protected void setStateDescriptionProvider(BondHomeStateDescriptionProvider stateDescription) {
-        this.stateDescriptionProvider = stateDescription;
-    }
-
-    protected void unsetStateDescriptionProvider(BondHomeStateDescriptionProvider stateDescription) {
-        this.stateDescriptionProvider = null;
-    }
-
-    @Reference
-    protected void setTypeProvider(BondHomeTypeProvider provider) {
-        this.typeProvider = provider;
-    }
-
-    protected void unsetTypeProvider(BondHomeTypeProvider provider) {
-        this.typeProvider = null;
     }
 
     @Override
@@ -101,7 +65,7 @@ public class BondHomeHandlerFactory extends BaseThingHandlerFactory {
             return handler;
         } else if (SUPPORTED_DEVICE_TYPES.contains(thingTypeUID)) {
             logger.trace("Creating handler for Bond device");
-            return new BondDeviceHandler(thing, typeProvider, stateDescriptionProvider);
+            return new BondDeviceHandler(thing);
         }
 
         return null;

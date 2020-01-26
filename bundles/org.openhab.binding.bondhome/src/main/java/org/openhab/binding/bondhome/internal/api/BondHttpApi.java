@@ -140,7 +140,7 @@ public class BondHttpApi {
      * @return the {@link org.openhab.binding.bondhome.internal.api.BondDeviceProperties}
      */
     public void executeDeviceAction(String deviceId, BondDeviceAction action, @Nullable Integer argument) {
-        String url = "http://" + bridgeHandler.getBridgeIpAddress() + "v2/devices/" + deviceId + "/actions/"
+        String url = "http://" + bridgeHandler.getBridgeIpAddress() + "/v2/devices/" + deviceId + "/actions/"
                 + action.getActionId();
         String payload = "{}";
         if (argument != null) {
@@ -148,12 +148,14 @@ public class BondHttpApi {
         }
         InputStream content = new ByteArrayInputStream(payload.getBytes());
         try {
-            logger.trace("HTTP PUT to {} with content {}", url, payload);
+            logger.debug("HTTP PUT to {} with content {}", url, payload);
 
             Properties headers = new Properties();
             headers.put("BOND-Token", bridgeHandler.getBridgeToken());
 
-            HttpUtil.executeUrl(HttpMethod.PUT, url, headers, content, "application/json", BOND_API_TIMEOUT_MS);
+            String httpResponse = HttpUtil.executeUrl(HttpMethod.PUT, url, headers, content, "application/json",
+                    BOND_API_TIMEOUT_MS);
+            logger.debug("HTTP response from {}: {}", thingName, httpResponse);
         } catch (IOException ignored) {
             logger.warn("Unable to execute device action!");
         }
@@ -168,7 +170,7 @@ public class BondHttpApi {
         String httpResponse = "ERROR";
         String url = "http://" + bridgeHandler.getBridgeIpAddress() + uri;
         try {
-            logger.trace("HTTP GET for to {}", url);
+            logger.debug("HTTP GET for to {}", url);
 
             Properties headers = new Properties();
             headers.put("BOND-Token", bridgeHandler.getBridgeToken());
@@ -190,7 +192,7 @@ public class BondHttpApi {
                 throw new IOException("Unexpected http response: " + httpResponse);
             }
 
-            logger.trace("HTTP response from {}: {}", thingName, httpResponse);
+            logger.debug("HTTP response from {}: {}", thingName, httpResponse);
             return httpResponse;
         } catch (IOException e) {
             if (e.getMessage().contains("Timeout")) {
