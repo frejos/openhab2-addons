@@ -25,6 +25,7 @@
 /bundles/org.openhab.binding.bluetooth.bluez/ @cdjackson @kaikreuzer
 /bundles/org.openhab.binding.bluetooth.blukii/ @kaikreuzer
 /bundles/org.openhab.binding.bluetooth.ruuvitag/ @ssalonen
+/bundles/org.openhab.binding.bondhome/ @SRGDamia1
 /bundles/org.openhab.binding.boschindego/ @jofleck
 /bundles/org.openhab.binding.bosesoundtouch/ @marvkis @tratho
 /bundles/org.openhab.binding.bsblan/ @hypetsch

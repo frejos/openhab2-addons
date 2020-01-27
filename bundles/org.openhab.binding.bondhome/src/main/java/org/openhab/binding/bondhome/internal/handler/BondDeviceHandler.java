@@ -554,6 +554,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
             updateStatus(ThingStatus.ONLINE);
             updateState(CHANNEL_LAST_UPDATE, new DateTimeType());
+            logger.trace("Update Time for {}: {}", this.getThing().getLabel(), (new DateTimeType()).toFullString());
 
             updateState(CHANNEL_POWER_STATE, updateState.power == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState("timer", new DecimalType(updateState.timer));
@@ -563,8 +564,11 @@ public class BondDeviceHandler extends BaseThingHandler {
                 double maxSpeed = devProperties.max_speed;
                 value = (int) (((double) updateState.speed / maxSpeed) * 100);
                 logger.trace("Raw fan speed: {}, Percent: {}", updateState.speed, value);
-            } else if (updateState.speed != 0) {
-                logger.info("Unable to convert fan speed to a percent!");
+            } else if (updateState.speed != 0 && this.getThing().getThingTypeUID().equals(THING_TYPE_BOND_FAN)) {
+                logger.info("Unable to convert fan speed to a percent for {}!", this.getThing().getLabel());
+                scheduler.schedule(() -> {
+                    initializeThing();
+                }, 30, TimeUnit.SECONDS);
             }
             updateState(CHANNEL_FAN_SPEED, new PercentType(value));
             updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);

@@ -170,7 +170,7 @@ public class BondHttpApi {
         String httpResponse = "ERROR";
         String url = "http://" + bridgeHandler.getBridgeIpAddress() + uri;
         try {
-            logger.debug("HTTP GET for to {}", url);
+            logger.debug("HTTP GET to {}", url);
 
             Properties headers = new Properties();
             headers.put("BOND-Token", bridgeHandler.getBridgeToken());
