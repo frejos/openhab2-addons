@@ -583,12 +583,12 @@ public class BondDeviceHandler extends BaseThingHandler {
 
             updateState(CHANNEL_UP_LIGHT_ENABLE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_UP_LIGHT_STATE,
-                    (updateState.up_light > 0 && updateState.light > 0) ? OnOffType.OFF : OnOffType.ON);
+                    (updateState.up_light == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
             updateState(CHANNEL_UP_LIGHT_BRIGHTNESS, new DecimalType(updateState.upLightBrightness));
 
             updateState(CHANNEL_DOWN_LIGHT_ENABLE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_DOWN_LIGHT_STATE,
-                    (updateState.down_light > 0 && updateState.light > 0) ? OnOffType.OFF : OnOffType.ON);
+                    (updateState.down_light == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
             updateState(CHANNEL_DOWN_LIGHT_BRIGHTNESS, new DecimalType(updateState.downLightBrightness));
 
             updateState(CHANNEL_FLAME, new DecimalType(updateState.flame));
