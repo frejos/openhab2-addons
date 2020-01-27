@@ -56,6 +56,7 @@ public class BondHomeBindingConstants {
     // Universal channels
     public static final String CHANNEL_GROUP_COMMON = "commonChannels";
     public static final String CHANNEL_POWER_STATE = "commonChannels#power";
+    public static final String CHANNEL_LAST_UPDATE = "commonChannels#lastUpdate";
 
     // Ceiling fan channels
     public static final String CHANNEL_GROUP_FAN = "ceilingFanChannels";

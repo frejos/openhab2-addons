@@ -16,6 +16,13 @@
 		</tags>
 	</channel-type>
 
+	<channel-type id="lastUpdateType">
+		<item-type>DateTime</item-type>
+		<label>Last Update</label>
+		<description>Timestamp of last status update</description>
+		<state readOnly="true"></state>
+	</channel-type>
+
 	<channel-type id="fanSpeedChannelType" advanced="false">
 		<item-type>Dimmer</item-type>
 		<label>Fan Speed</label>

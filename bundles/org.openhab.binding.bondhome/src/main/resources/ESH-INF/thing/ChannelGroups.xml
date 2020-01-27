@@ -10,6 +10,7 @@
 		<label>Common</label>
 		<channels>
 			<channel id="power" typeId="powerChannelType" />
+			<channel id="lastUpdate" typeId="lastUpdateType" />
 		</channels>
 	</channel-group-type>
 

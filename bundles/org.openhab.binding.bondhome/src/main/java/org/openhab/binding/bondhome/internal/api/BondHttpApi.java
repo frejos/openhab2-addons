@@ -112,7 +112,7 @@ public class BondHttpApi {
      * @throws IOException
      */
     @Nullable
-    public BondDeviceState getDeviceState(String deviceId) throws IOException {
+    public synchronized BondDeviceState getDeviceState(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/state");
         logger.debug("BondHome device state : {}", json);
         return gson.fromJson(json, BondDeviceState.class);
@@ -126,7 +126,7 @@ public class BondHttpApi {
      * @throws IOException
      */
     @Nullable
-    public BondDeviceProperties getDeviceProperties(String deviceId) throws IOException {
+    public synchronized BondDeviceProperties getDeviceProperties(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/properties");
         logger.debug("BondHome device properties : {}", json);
         return gson.fromJson(json, BondDeviceProperties.class);
@@ -139,7 +139,7 @@ public class BondHttpApi {
      * @param actionId The Bond action
      * @return the {@link org.openhab.binding.bondhome.internal.api.BondDeviceProperties}
      */
-    public void executeDeviceAction(String deviceId, BondDeviceAction action, @Nullable Integer argument) {
+    public synchronized void executeDeviceAction(String deviceId, BondDeviceAction action, @Nullable Integer argument) {
         String url = "http://" + bridgeHandler.getBridgeIpAddress() + "/v2/devices/" + deviceId + "/actions/"
                 + action.getActionId();
         String payload = "{}";

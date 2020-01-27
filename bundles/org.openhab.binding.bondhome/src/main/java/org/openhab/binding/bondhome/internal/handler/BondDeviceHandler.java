@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
@@ -518,6 +519,8 @@ public class BondDeviceHandler extends BaseThingHandler {
         List<BondDeviceAction> availableActions = Arrays.asList(actions);
         List<Channel> possibleChannels = this.getThing().getChannels();
         List<String> availableChannelIds = new ArrayList<>();
+        // Always have the last update time channel
+        availableChannelIds.add(CHANNEL_LAST_UPDATE);
 
         // Get the thing to edit
         ThingBuilder thingBuilder = editThing();
@@ -549,6 +552,9 @@ public class BondDeviceHandler extends BaseThingHandler {
         if (updateState != null) {
             logger.debug("Updating channels from state");
 
+            updateStatus(ThingStatus.ONLINE);
+            updateState(CHANNEL_LAST_UPDATE, new DateTimeType());
+
             updateState(CHANNEL_POWER_STATE, updateState.power == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState("timer", new DecimalType(updateState.timer));
             int value = 1;
@@ -557,8 +563,8 @@ public class BondDeviceHandler extends BaseThingHandler {
                 double maxSpeed = devProperties.max_speed;
                 value = (int) (((double) updateState.speed / maxSpeed) * 100);
                 logger.trace("Raw fan speed: {}, Percent: {}", updateState.speed, value);
-            } else{
-                logger.trace("Unable to convert fan speed to a percent!");
+            } else if (updateState.speed != 0) {
+                logger.info("Unable to convert fan speed to a percent!");
             }
             updateState(CHANNEL_FAN_SPEED, new PercentType(value));
             updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
