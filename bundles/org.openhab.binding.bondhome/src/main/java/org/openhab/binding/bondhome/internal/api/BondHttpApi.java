@@ -64,7 +64,7 @@ public class BondHttpApi {
     @Nullable
     public BondSysVersion getBridgeVersion() throws IOException {
         String json = request("/v2/sys/version");
-        logger.debug("BondHome device info : {}", json);
+        logger.trace("BondHome device info : {}", json);
         return gson.fromJson(json, BondSysVersion.class);
     }
 
@@ -100,7 +100,7 @@ public class BondHttpApi {
     @Nullable
     public BondDevice getDevice(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId);
-        logger.debug("BondHome device info : {}", json);
+        logger.trace("BondHome device info : {}", json);
         return gson.fromJson(json, BondDevice.class);
     }
 
@@ -114,7 +114,7 @@ public class BondHttpApi {
     @Nullable
     public synchronized BondDeviceState getDeviceState(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/state");
-        logger.debug("BondHome device state : {}", json);
+        logger.trace("BondHome device state : {}", json);
         return gson.fromJson(json, BondDeviceState.class);
     }
 
@@ -128,7 +128,7 @@ public class BondHttpApi {
     @Nullable
     public synchronized BondDeviceProperties getDeviceProperties(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/properties");
-        logger.debug("BondHome device properties : {}", json);
+        logger.trace("BondHome device properties : {}", json);
         return gson.fromJson(json, BondDeviceProperties.class);
     }
 
