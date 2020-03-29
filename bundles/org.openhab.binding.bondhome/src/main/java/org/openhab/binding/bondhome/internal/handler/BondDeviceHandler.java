@@ -83,12 +83,14 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     public BondDeviceHandler(Thing thing) {
         super(thing);
-        logger.trace("Created handler for bond device.");
+        config = getConfigAs(BondDeviceConfiguration.class);
+        logger.trace("Created handler for bond device with device id {}.", config.deviceId);
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.trace("Bond device handler for {} received command {} on channel {}", config.deviceId, command, channelUID);
+        logger.trace("Bond device handler for {} received command {} on channel {}", config.deviceId, command,
+                channelUID);
         BondHttpApi api = this.api;
         if (api == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
@@ -400,7 +402,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        logger.debug("Starting initialization for Bond device!");
+        logger.debug("Starting initialization for Bond device with device id {}!", config.deviceId);
         config = getConfigAs(BondDeviceConfiguration.class);
 
         // set the thing status to UNKNOWN temporarily
