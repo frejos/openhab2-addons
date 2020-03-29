@@ -88,6 +88,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
+        logger.trace("Bond device handler for {} received command {} on channel {}", config.deviceId, command, channelUID);
         BondHttpApi api = this.api;
         if (api == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");

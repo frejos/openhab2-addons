@@ -90,6 +90,7 @@ public class BondBridgeHandler extends BaseBridgeHandler {
         if (config != null) {
             if (config.bondIpAddress == null) {
                 try {
+                    logger.trace("IP address of Bond {} is unknown", config.bondId);
                     String lookupAddress = config.bondId + ".local";
                     logger.trace("Attempting to get IP address for Bond Bridge {}", lookupAddress);
                     InetAddress ia = InetAddress.getByName(lookupAddress);
