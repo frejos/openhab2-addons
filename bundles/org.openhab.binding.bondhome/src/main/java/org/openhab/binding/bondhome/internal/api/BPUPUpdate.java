@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -33,7 +35,7 @@ public class BPUPUpdate {
     // The Bond ID
     @SerializedName("B")
     @Expose(serialize = true, deserialize = true)
-    public String bondId = "ZZBL12345";
+    public String bondId = API_MISSING_BOND_ID;
     // The topic (the path from HTTP URL)
     @SerializedName("t")
     @Expose(serialize = true, deserialize = true)

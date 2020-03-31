@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.annotations.Expose;
@@ -32,7 +34,7 @@ public class BondDeviceState {
     // The current state hash
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
+    public String hash = API_HASH;
     // The device power state 1 = on, 0 = off
     @Expose(serialize = true, deserialize = true)
     public int power;

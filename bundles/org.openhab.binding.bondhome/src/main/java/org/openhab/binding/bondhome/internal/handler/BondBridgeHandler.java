@@ -59,8 +59,8 @@ public class BondBridgeHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(BondBridgeHandler.class);
 
-    // Get a dedicated threadpool for the long-running listener thread
-    // Comes from DoorBird handler - intent is to not permanently tie up the common scheduler pool.
+    // Get a dedicated threadpool for the long-running listener thread.
+    // Intent is to not permanently tie up the common scheduler pool.
     private final ScheduledExecutorService bondScheduler = ThreadPoolManager.getScheduledPool("bondBridgeHandler");
     private @Nullable ScheduledFuture<?> listenerJob;
     private final BPUPListener udpListener;

@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -34,16 +36,16 @@ public class BondDevice {
     // The current device hash
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
+    public String hash = API_HASH;
     // The name associated with the device in the bond app
     @Expose(serialize = true, deserialize = true)
-    public String name = "deviceName";
+    public String name = API_MISSING_DEVICE_NAME;
     // The device type
     @Expose(serialize = true, deserialize = true)
-    public BondDeviceType type = BondDeviceType.genericDevice;
+    public BondDeviceType type = BondDeviceType.GenericDevice;
     // The remote control template being used
     @Expose(serialize = true, deserialize = true)
-    public String template = "template";
+    public String template = API_MISSING_TEMPLATE;
     // A list of the available actions
     @Expose(serialize = false, deserialize = true)
     public BondDeviceAction[] actions = { BondDeviceAction.TurnOn };

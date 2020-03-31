@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.annotations.Expose;
@@ -31,7 +33,7 @@ public class BondDeviceProperties {
     // The current properties hash
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
+    public String hash = API_HASH;
     // The maximum speed of a fan
     @Expose(serialize = true, deserialize = true)
     public int max_speed;

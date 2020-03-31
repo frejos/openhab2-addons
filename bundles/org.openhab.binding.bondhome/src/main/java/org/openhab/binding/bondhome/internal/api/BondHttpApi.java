@@ -48,7 +48,6 @@ import com.google.gson.JsonParser;
 public class BondHttpApi {
     private final Logger logger = LoggerFactory.getLogger(BondHttpApi.class);
     private final BondBridgeHandler bridgeHandler;
-    private final String thingName = "";
     private Gson gson = new Gson();
 
     public BondHttpApi(BondBridgeHandler bridgeHandler) {
@@ -155,7 +154,7 @@ public class BondHttpApi {
 
             String httpResponse = HttpUtil.executeUrl(HttpMethod.PUT, url, headers, content, "application/json",
                     BOND_API_TIMEOUT_MS);
-            logger.debug("HTTP response from {}: {}", thingName, httpResponse);
+            logger.debug("HTTP response from {}: {}", deviceId, httpResponse);
         } catch (IOException ignored) {
             logger.warn("Unable to execute device action!");
         }
@@ -192,13 +191,13 @@ public class BondHttpApi {
                 throw new IOException("Unexpected http response: " + httpResponse);
             }
 
-            logger.debug("HTTP response from {}: {}", thingName, httpResponse);
+            logger.debug("HTTP response from request to {}: {}", uri, httpResponse);
             return httpResponse;
         } catch (IOException e) {
             if (e.getMessage().contains("Timeout")) {
-                throw new IOException("Bond API call failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
+                throw new IOException("Bond API call to " + uri + " failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
             } else {
-                throw new IOException("Bond API call failed: " + e.getMessage() + ", url=" + url);
+                throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage() );
             }
         }
     }

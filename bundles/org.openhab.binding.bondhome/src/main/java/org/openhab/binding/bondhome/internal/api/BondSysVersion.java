@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.annotations.Expose;
@@ -33,28 +35,28 @@ public class BondSysVersion {
     // The current state hash
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
+    public String hash = API_HASH;
 
     @Expose(serialize = true, deserialize = true)
-    public String target = "zermatt";
+    public String target = BOND_BRIDGE_TARGET;
 
     @Expose(serialize = true, deserialize = true)
-    public String fw_ver = "v2.10.8";
+    public String fw_ver = BOND_LAST_KNOWN_FIRMWARE;
 
     @Expose(serialize = true, deserialize = true)
-    public String fw_date = "Mon Dec  2 19:18:16 UTC 2019";
+    public String fw_date = BOND_LAST_KNOWN_FIRMWARE_DATE;
 
     @Expose(serialize = true, deserialize = true)
-    public String make = "Olibra";
+    public String make = BOND_BRIDGE_MAKE;
 
     @Expose(serialize = true, deserialize = true)
-    public String model = "BD-1000";
+    public String model = BOND_BRIDGE_MODEL;
 
     @Expose(serialize = true, deserialize = true)
-    public String branding_profile = "O_BD-1000";
+    public String branding_profile = BOND_BRIDGE_BRANDING;
 
     @Expose(serialize = true, deserialize = true)
-    public String bondid = "ZZBLbondid";
+    public String bondid = API_MISSING_BOND_ID;
 
     @Expose(serialize = true, deserialize = true)
     public Boolean upgrade_http = true;

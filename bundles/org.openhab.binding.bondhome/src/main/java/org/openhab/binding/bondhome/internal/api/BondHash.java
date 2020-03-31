@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.annotations.Expose;
@@ -31,5 +33,5 @@ public class BondHash {
     // The name associated with the device in the bond app
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
-    public String hash = "hash";
+    public String hash = API_HASH;
 }

@@ -159,12 +159,12 @@ public class BondDeviceHandler extends BaseThingHandler {
                     break;
 
                 case CHANNEL_FAN_BREEZE_MEAN:
-                    // TODO write array command fxn
+                    // TODO(SRGDamia1): write array command fxn
                     logger.trace("Support for fan breeze settings not yet available");
                     break;
 
                 case CHANNEL_FAN_BREEZE_VAR:
-                    // TODO write array command fxn
+                    // TODO(SRGDamia1): write array command fxn
                     logger.trace("Support for fan breeze settings not yet available");
                     break;
 
@@ -291,7 +291,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
                 case CHANNEL_UP_LIGHT_DIRECTIONAL_INC:
                 case CHANNEL_UP_LIGHT_DIRECTIONAL_DECR:
-                    // TODO: Command format not documented by Bond for up light directional brightness
+                    // TODO(SRGDamia1): Command format not documented by Bond for up light directional brightness
                     logger.info("Bi-direction brightness control for up-lights not yet enabled!");
                     break;
 
@@ -343,8 +343,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
                 case CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC:
                 case CHANNEL_DOWN_LIGHT_DIRECTIONAL_DECR:
-                    // TODO: Command format not documented by Bond for down light directional brightness
-                    // brightness
+                    // TODO(SRGDamia1): Command format not documented by Bond for down light directional brightness
                     logger.info("Bi-direction brightness control for up-lights not yet enabled!");
                     break;
 
