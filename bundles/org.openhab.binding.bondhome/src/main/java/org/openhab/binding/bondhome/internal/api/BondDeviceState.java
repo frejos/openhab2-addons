@@ -35,17 +35,21 @@ public class BondDeviceState {
     @SerializedName("_")
     @Expose(serialize = false, deserialize = true)
     public String hash = API_HASH;
+
     // The device power state 1 = on, 0 = off
     @Expose(serialize = true, deserialize = true)
     public int power;
+
     // The seconds remaining on timer, or 0 meaning no timer running
     @Expose(serialize = true, deserialize = true)
     public int timer;
+
     // The fan speed - value from 1 to max_speed. If power=0, speed represents the
     // last speed setting and the speed to which the device resumes when user asks
     // to turn on.
     @Expose(serialize = true, deserialize = true)
     public int speed;
+
     // The current breeze setting (for a ceiling fan)
     // array of the form[<mode>,<mean>,<var>]:
     // mode: (integer) 0 = breeze mode disabled, 1 = breeze mode enabled
@@ -53,40 +57,55 @@ public class BondDeviceState {
     // var: (integer) sets the variability of the speed. 0 = minimum variation (steady), 100 = maximum variation (gusty)
     @Expose(serialize = true, deserialize = true)
     public int[] breeze = { 0, 50, 50 };
+
     // The direction of a fan with a reversible motor 1 = forward, -1 = reverse.
     // The forward and reverse modes are sometimes called Summer and Winter, respectively.
     @Expose(serialize = true, deserialize = true)
     public int direction;
+
     // The fan light state 1 = light on, 0 = light off
     @Expose(serialize = true, deserialize = true)
     public int light;
+
     // Whether separate up and down lights are enabled, if applicable
     // 1 = enabled, 0 = disabled
     // If both up_light and light are 1, then the up light will be on, and similar for down light.
+    @SerializedName("up_light")
     @Expose(serialize = true, deserialize = true)
-    public int up_light;
+    public int upLight;
+
+    @SerializedName("down_light")
     @Expose(serialize = true, deserialize = true)
-    public int down_light;
+    public int downLight;
+
     // The brightness of a fan light or lights
     @Expose(serialize = true, deserialize = true)
     public int brightness;
+
     @Expose(serialize = true, deserialize = true)
     public int upLightBrightness;
+
     @Expose(serialize = true, deserialize = true)
     public int downLightBrightness;
+
     // The flame level of a fireplace - value from 1 to 100. If power=0, flame represents the last flame setting and
     // the flame to which the device resumes when user asks to turn on
     @Expose(serialize = true, deserialize = true)
     public int flame;
+
     // Whether a device is open or closed (for motorized shades and garage doors)
     // 1 = open, 0 = closed
     @Expose(serialize = true, deserialize = true)
     public int open;
+
     // Fan settings for a fireplace fan
     // fpfan_power: (integer) 1 = on, 0 = off
     // fpfan_speed: (integer) from 1-100
+    @SerializedName("fpfan_power")
     @Expose(serialize = true, deserialize = true)
-    public int fpfan_power;
+    public int fpfanPower;
+
+    @SerializedName("fpfan_speed")
     @Expose(serialize = true, deserialize = true)
-    public int fpfan_speed;
+    public int fpfanSpeed;
 }

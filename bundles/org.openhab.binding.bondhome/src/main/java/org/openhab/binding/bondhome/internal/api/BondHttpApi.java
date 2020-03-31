@@ -197,7 +197,7 @@ public class BondHttpApi {
             if (e.getMessage().contains("Timeout")) {
                 throw new IOException("Bond API call to " + uri + " failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
             } else {
-                throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage() );
+                throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
             }
         }
     }

@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.config;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -27,8 +29,8 @@ public class BondBridgeConfiguration {
     /**
      * Configuration for a Bond Bridge
      */
-    public String bondId = "bondId";
-    public String localToken = "localToken";
+    public String bondId = API_MISSING_BOND_ID;
+    public String localToken = API_MISSING_LOCAL_TOKEN;
     public @Nullable String bondIpAddress;
 
     public @Nullable String getIpAddress() {

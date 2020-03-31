@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.config.core.Configuration;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
@@ -50,6 +51,7 @@ import org.openhab.binding.bondhome.internal.api.BondDevice;
 import org.openhab.binding.bondhome.internal.api.BondDeviceAction;
 import org.openhab.binding.bondhome.internal.api.BondDeviceProperties;
 import org.openhab.binding.bondhome.internal.api.BondDeviceState;
+import org.openhab.binding.bondhome.internal.api.BondDeviceType;
 import org.openhab.binding.bondhome.internal.api.BondHttpApi;
 import org.openhab.binding.bondhome.internal.config.BondDeviceConfiguration;
 import org.slf4j.Logger;
@@ -135,7 +137,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                         int value = 1;
                         BondDeviceProperties devProperties = this.deviceProperties;
                         if (devProperties != null) {
-                            int maxSpeed = devProperties.max_speed;
+                            int maxSpeed = devProperties.maxSpeed;
                             value = (int) Math.ceil(((PercentType) command).intValue() * maxSpeed / 100);
                         }
                         logger.trace("Fan speed command with speed set as {}", value);
@@ -482,6 +484,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         BondDevice devInfo = this.deviceInfo;
         BondDeviceProperties devProperties = this.deviceProperties;
         BondDeviceState devState = this.deviceState;
+        String lastBindingVersion = this.getThing().getProperties().get(PROPERTIES_BINDING_VERSION);
 
         // Update all the thing properties based on the result
         Map<String, String> thingProperties = new HashMap<String, String>();
@@ -491,18 +494,24 @@ public class BondDeviceHandler extends BaseThingHandler {
         }
         if (devProperties != null) {
             logger.trace("Updating other device properties for {}", config.deviceId);
-            thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.max_speed));
-            thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trust_state));
+            thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.maxSpeed));
+            thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trustState));
             thingProperties.put(PROPERTIES_ADDRESS, String.valueOf(devProperties.addr));
             thingProperties.put(PROPERTIES_RF_FREQUENCY, String.valueOf(devProperties.freq));
+            thingProperties.put(PROPERTIES_BINDING_VERSION, CURRENT_BINDING_VERSION);
         }
         logger.trace("Saving properties for {}", config.deviceId);
         updateProperties(thingProperties);
 
-        // Delete channels based on the available actions
+        // Recreate all possible channels from xml and delete the extras based on the available actions
         if (devInfo != null) {
-            logger.trace("Deleting extra channels based on available actions for {}", config.deviceId);
-            deleteExtraChannels(devInfo.actions);
+            // Anytime the configuration has changed or the binding has been updated,
+            // recreate the thing to make sure all possible channels are available
+            final @Nullable String lastDeviceConfigurationHash = config.lastDeviceConfigurationHash;
+            if (!devInfo.hash.equals(lastDeviceConfigurationHash)
+                    || !lastBindingVersion.equals(CURRENT_BINDING_VERSION)) {
+                recreateChannels(devInfo.type, devInfo.hash, devInfo.actions);
+            }
         }
 
         // Update all channels with current states
@@ -515,17 +524,34 @@ public class BondDeviceHandler extends BaseThingHandler {
         updateStatus(ThingStatus.ONLINE);
     }
 
-    private void deleteExtraChannels(BondDeviceAction[] actions) {
-        logger.trace("Deleting channels based on the available actions");
+    private void recreateChannels(BondDeviceType currentType, String currentHash, BondDeviceAction[] currentActions) {
+        logger.debug(
+                "Recreating all possible channels for a {} and deleting extras based on the available actions for {}",
+                currentType.getThingTypeUID().getAsString(), config.deviceId);
 
-        List<BondDeviceAction> availableActions = Arrays.asList(actions);
+        // Create a new configuration
+        final Map<String, Object> map = new HashMap<>();
+        map.put(CONFIG_DEVICE_ID, config.deviceId);
+        map.put(CONFIG_LATEST_HASH, currentHash);
+        Configuration newConfiguration = new Configuration(map);
+
+        // Update the thing with the new configuration
+        // ThingBuilder thingBuilder = editThing();
+        // thingBuilder.withConfiguration(newConfiguration);
+        // updateThing(thingBuilder.build());
+
+        // Change the thing type back to itself to force all channels to be re-created from XML
+        changeThingType(currentType.getThingTypeUID(), newConfiguration);
+
+        // Get the re-created thing to edit
+        final ThingBuilder thingBuilder = editThing();
+
+        // Now, look at the whole list of possible channels
+        List<BondDeviceAction> availableActions = Arrays.asList(currentActions);
         List<Channel> possibleChannels = this.getThing().getChannels();
         List<String> availableChannelIds = new ArrayList<>();
         // Always have the last update time channel
         availableChannelIds.add(CHANNEL_LAST_UPDATE);
-
-        // Get the thing to edit
-        ThingBuilder thingBuilder = editThing();
 
         for (BondDeviceAction action : availableActions) {
             availableChannelIds.add(action.getChannelTypeId());
@@ -563,7 +589,7 @@ public class BondDeviceHandler extends BaseThingHandler {
             int value = 1;
             BondDeviceProperties devProperties = this.deviceProperties;
             if (devProperties != null) {
-                double maxSpeed = devProperties.max_speed;
+                double maxSpeed = devProperties.maxSpeed;
                 value = (int) (((double) updateState.speed / maxSpeed) * 100);
                 logger.trace("Raw fan speed: {}, Percent: {}", updateState.speed, value);
             } else if (updateState.speed != 0 && this.getThing().getThingTypeUID().equals(THING_TYPE_BOND_FAN)) {
@@ -583,19 +609,19 @@ public class BondDeviceHandler extends BaseThingHandler {
             updateState(CHANNEL_LIGHT_STATE, updateState.light == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_LIGHT_BRIGHTNESS, new DecimalType(updateState.brightness));
 
-            updateState(CHANNEL_UP_LIGHT_ENABLE, updateState.up_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_UP_LIGHT_ENABLE, updateState.upLight == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_UP_LIGHT_STATE,
-                    (updateState.up_light == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
+                    (updateState.upLight == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
             updateState(CHANNEL_UP_LIGHT_BRIGHTNESS, new DecimalType(updateState.upLightBrightness));
 
-            updateState(CHANNEL_DOWN_LIGHT_ENABLE, updateState.down_light == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_DOWN_LIGHT_ENABLE, updateState.downLight == 0 ? OnOffType.OFF : OnOffType.ON);
             updateState(CHANNEL_DOWN_LIGHT_STATE,
-                    (updateState.down_light == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
+                    (updateState.downLight == 1 && updateState.light == 1) ? OnOffType.ON : OnOffType.OFF);
             updateState(CHANNEL_DOWN_LIGHT_BRIGHTNESS, new DecimalType(updateState.downLightBrightness));
 
             updateState(CHANNEL_FLAME, new DecimalType(updateState.flame));
-            updateState(CHANNEL_FP_FAN_STATE, updateState.fpfan_power == 0 ? OnOffType.OFF : OnOffType.ON);
-            updateState(CHANNEL_FP_FAN_SPEED, new DecimalType(updateState.fpfan_speed));
+            updateState(CHANNEL_FP_FAN_STATE, updateState.fpfanPower == 0 ? OnOffType.OFF : OnOffType.ON);
+            updateState(CHANNEL_FP_FAN_SPEED, new DecimalType(updateState.fpfanSpeed));
 
             updateState(CHANNEL_OPEN_CLOSE, updateState.open == 0 ? OpenClosedType.CLOSED : OpenClosedType.OPEN);
 

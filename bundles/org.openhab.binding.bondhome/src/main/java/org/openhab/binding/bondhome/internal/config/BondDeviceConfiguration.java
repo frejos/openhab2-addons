@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.config;
 
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
@@ -25,5 +27,6 @@ public class BondDeviceConfiguration {
     /**
      * Configuration for a Bond Device
      */
-    public String deviceId = "deviceId";
+    public String deviceId = API_MISSING_DEVICE_NAME;
+    public String lastDeviceConfigurationHash = API_HASH;
 }

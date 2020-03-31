@@ -30,6 +30,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class BondHomeBindingConstants {
 
     public static final String BINDING_ID = "bondhome";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.01";
 
     /**
      * List of all Thing Type UIDs.
@@ -107,18 +108,20 @@ public class BondHomeBindingConstants {
      * Configuration arguments
      */
     public static final String CONFIG_BOND_ID = "bondId";
-    public static final String CONFIG_DEVICE_ID = "deviceId";
     public static final String CONFIG_IP_ADDRESS = "bondIpAddress";
     public static final String CONFIG_LOCAL_TOKEN = "localToken";
+    public static final String CONFIG_DEVICE_ID = "deviceId";
+    public static final String CONFIG_LATEST_HASH = "lastDeviceConfigurationHash";
 
     /**
      * Device Properties
      */
     public static final String PROPERTIES_DEVICE_NAME = "deviceName";
-    public static final String PROPERTIES_MAX_SPEED = "max_speed";
-    public static final String PROPERTIES_TRUST_STATE = "trust_state";
+    public static final String PROPERTIES_MAX_SPEED = "maxSpeed";
+    public static final String PROPERTIES_TRUST_STATE = "trustState";
     public static final String PROPERTIES_ADDRESS = "addr";
     public static final String PROPERTIES_RF_FREQUENCY = "freq";
+    public static final String PROPERTIES_BINDING_VERSION = "bindingVersion";
 
     /**
      * Constants
@@ -132,6 +135,7 @@ public class BondHomeBindingConstants {
     public static final String API_MISSING_DEVICE_NAME = "deviceName";
     public static final String API_MISSING_TEMPLATE = "template";
     public static final String API_MISSING_BOND_ID = "ZZBL12345";
+    public static final String API_MISSING_LOCAL_TOKEN = "localToken";
 
     public static final String BOND_BRIDGE_TARGET = "zermatt";
     public static final String BOND_LAST_KNOWN_FIRMWARE = "v2.10.21";

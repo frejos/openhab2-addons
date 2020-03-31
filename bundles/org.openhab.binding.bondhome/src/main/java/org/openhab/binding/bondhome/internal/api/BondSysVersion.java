@@ -40,11 +40,13 @@ public class BondSysVersion {
     @Expose(serialize = true, deserialize = true)
     public String target = BOND_BRIDGE_TARGET;
 
+    @SerializedName("fw_ver")
     @Expose(serialize = true, deserialize = true)
-    public String fw_ver = BOND_LAST_KNOWN_FIRMWARE;
+    public String firmwareVersion = BOND_LAST_KNOWN_FIRMWARE;
 
+    @SerializedName("fw_date")
     @Expose(serialize = true, deserialize = true)
-    public String fw_date = BOND_LAST_KNOWN_FIRMWARE_DATE;
+    public String firmwareDate = BOND_LAST_KNOWN_FIRMWARE_DATE;
 
     @Expose(serialize = true, deserialize = true)
     public String make = BOND_BRIDGE_MAKE;
@@ -52,18 +54,21 @@ public class BondSysVersion {
     @Expose(serialize = true, deserialize = true)
     public String model = BOND_BRIDGE_MODEL;
 
+    @SerializedName("branding_profile")
     @Expose(serialize = true, deserialize = true)
-    public String branding_profile = BOND_BRIDGE_BRANDING;
+    public String brandingProfile = BOND_BRIDGE_BRANDING;
 
     @Expose(serialize = true, deserialize = true)
     public String bondid = API_MISSING_BOND_ID;
 
+    @SerializedName("upgrade_http")
     @Expose(serialize = true, deserialize = true)
-    public Boolean upgrade_http = true;
+    public Boolean upgradeHttp = true;
 
     @Expose(serialize = true, deserialize = true)
     public int api;
 
+    @SerializedName("uptime_s")
     @Expose(serialize = true, deserialize = true)
-    public int uptime_s;
+    public int uptimeSeconds;
 }

@@ -58,9 +58,16 @@ Bridge bondhome:bondBridge:myBridge "My Bond Bridge" @ "Living Room" [ bondId="Z
 
 To create any other device, only the bridge id and  device id is required.
 
-| Parameter ID | Parameter Type | Mandatory | Description                             | Default |
-|--------------|----------------|-----------|-----------------------------------------|---------|
-| deviceId     | text           | true      | The device id, viewable in the Bond app |         |
+| Parameter ID                | Parameter Type | Mandatory | Description                              | Default |
+|-----------------------------|----------------|-----------|------------------------------------------|---------|
+| deviceId                    | text           | true      | The device id, viewable in the Bond app  |         |
+| lastDeviceConfigurationHash | text           | false     | The most recent device configuraton hash |         |
+
+NOTE:  The device hash state value is only viewable via the Bond API.
+The value entered in the configuration for the hash is checked against the current value returned by the API.
+If the configuration value doesn't match what is returned by the API, all channels will be re-created for the device and then the value in the configuration updated.
+This allows new channels to appear when the corresponding commands for those channels are added to a remote via the Bond app.
+It also allows you to force an update of all channels without deleting and re-creating the thing by simply changing the hash value in the configuration.
 
 Example Thing:
 
@@ -71,7 +78,7 @@ Thing bondhome:bondFan:bondBridge:myFan (bondhome:bondBridge:myBridge) "My Ceili
 Example Bridge with multiple devices:
 
 ```
-Bridge bondhome:bondBridge:myBridge "My Bond Bridge" @ "Living Room" [ bondId="ZZBLxxx", localToken="abc123..." ] {
+Bridge bondhome:bondBridge:myBridge "My Bond Bridge"  @ "Living Room" [ bondId="ZZBLxxx", localToken="abc123..." ] {
     Thing bondFan          MyFan1   "My Ceiling Fan"   @ "Living Room" [deviceId = "abc1234"]
     Thing bondFan          MyFan2   "My Other Fan"     @ "Bedroom"     [deviceId = "abc1234"]
     Thing bondShades       MyShades "My Roller Shades" @ "Bedroom"     [deviceId = "abc1234"]

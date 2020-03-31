@@ -35,12 +35,14 @@ public class BondDeviceProperties {
     @Expose(serialize = false, deserialize = true)
     public String hash = API_HASH;
     // The maximum speed of a fan
+    @SerializedName("max_speed")
     @Expose(serialize = true, deserialize = true)
-    public int max_speed;
+    public int maxSpeed;
     // Whether or not to "trust" that the device state remembered by the bond bridge is
     // correct for toggle switches
+    @SerializedName("trust_state")
     @Expose(serialize = true, deserialize = true)
-    public boolean trust_state;
+    public boolean trustState;
     // The device address
     @Expose(serialize = true, deserialize = true)
     public int addr;
@@ -51,6 +53,7 @@ public class BondDeviceProperties {
     @Expose(serialize = true, deserialize = true)
     public int bps;
     // Undocumented
+    @SerializedName("zero_gap")
     @Expose(serialize = true, deserialize = true)
-    public int zero_gap;
+    public int zeroGap;
 }
