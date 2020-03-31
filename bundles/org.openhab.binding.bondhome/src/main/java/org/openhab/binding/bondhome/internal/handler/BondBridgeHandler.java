@@ -217,7 +217,7 @@ public class BondBridgeHandler extends BaseBridgeHandler {
                 }
             }
         } else {
-            logger.warn("Can not read device Id frompush update.");
+            logger.warn("Can not read device Id from push update.");
         }
     }
 

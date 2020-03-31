@@ -42,6 +42,7 @@ import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
@@ -76,6 +77,9 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     private @Nullable ScheduledFuture<?> pollingJob;
 
+    private volatile boolean disposed;
+    private volatile boolean fullyInitialized;
+
     /**
      * The supported thing types.
      */
@@ -85,12 +89,15 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     public BondDeviceHandler(Thing thing) {
         super(thing);
-        config = getConfigAs(BondDeviceConfiguration.class);
-        logger.trace("Created handler for bond device with device id {}.", config.deviceId);
+        fullyInitialized = false;
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
+        if (hasConfigurationError() || disposed || !fullyInitialized) {
+            return;
+        }
+
         logger.trace("Bond device handler for {} received command {} on channel {}", config.deviceId, command,
                 channelUID);
         BondHttpApi api = this.api;
@@ -405,8 +412,10 @@ public class BondDeviceHandler extends BaseThingHandler {
     public void initialize() {
         logger.debug("Starting initialization for Bond device with device id {}!", config.deviceId);
         config = getConfigAs(BondDeviceConfiguration.class);
+        fullyInitialized = false;
 
         // set the thing status to UNKNOWN temporarily
+        disposed = false;
         updateStatus(ThingStatus.UNKNOWN);
 
         // Example for background initialization:
@@ -456,8 +465,11 @@ public class BondDeviceHandler extends BaseThingHandler {
     }
 
     @Override
-    public void dispose() {
-        logger.debug("Disposing thing handler.");
+    public synchronized void dispose() {
+        logger.debug("Disposing thing handler for {}.", this.getThing().getUID());
+        // Mark handler as disposed as soon as possible to halt updates
+        disposed = true;
+        fullyInitialized = false;
 
         final ScheduledFuture<?> pollingJob = this.pollingJob;
         if (pollingJob != null && !pollingJob.isCancelled()) {
@@ -466,7 +478,14 @@ public class BondDeviceHandler extends BaseThingHandler {
         this.pollingJob = null;
     }
 
-    private void initializeThing() {
+    @Override
+    public synchronized void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        logger.debug("bridgeStatusChanged for {}. Reseting handler", this.getThing().getUID());
+        this.dispose();
+        this.initialize();
+    }
+
+    private synchronized void initializeThing() {
         BondHttpApi api = this.api;
         if (api != null) {
             try {
@@ -522,9 +541,15 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         // Now we're online!
         updateStatus(ThingStatus.ONLINE);
+        fullyInitialized = true;
     }
 
-    private void recreateChannels(BondDeviceType currentType, String currentHash, BondDeviceAction[] currentActions) {
+    private synchronized void recreateChannels(BondDeviceType currentType, String currentHash,
+            BondDeviceAction[] currentActions) {
+        if (hasConfigurationError() || disposed) {
+            return;
+        }
+
         logger.debug(
                 "Recreating all possible channels for a {} and deleting extras based on the available actions for {}",
                 currentType.getThingTypeUID().getAsString(), config.deviceId);
@@ -576,9 +601,13 @@ public class BondDeviceHandler extends BaseThingHandler {
         return config.deviceId;
     }
 
-    public void updateChannelsFromState(@Nullable BondDeviceState updateState) {
+    public synchronized void updateChannelsFromState(@Nullable BondDeviceState updateState) {
+        if (hasConfigurationError() || disposed) {
+            return;
+        }
+
         if (updateState != null) {
-            logger.debug("Updating channels from state");
+            logger.debug("Updating channels from state for {}", config.deviceId);
 
             updateStatus(ThingStatus.ONLINE);
             updateState(CHANNEL_LAST_UPDATE, new DateTimeType());
@@ -641,6 +670,12 @@ public class BondDeviceHandler extends BaseThingHandler {
         } else {
             logger.debug("No state information provided to update channels with");
         }
+    }
+
+    private boolean hasConfigurationError() {
+        ThingStatusInfo statusInfo = getThing().getStatusInfo();
+        return statusInfo.getStatus() == ThingStatus.OFFLINE
+                && statusInfo.getStatusDetail() == ThingStatusDetail.CONFIGURATION_ERROR;
     }
 
 }
