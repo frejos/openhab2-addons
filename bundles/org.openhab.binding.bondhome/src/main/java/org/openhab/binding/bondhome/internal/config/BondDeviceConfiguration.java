@@ -13,7 +13,6 @@
 package org.openhab.binding.bondhome.internal.config;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * The {@link BondHomeConfiguration} class contains fields mapping thing configuration parameters.
@@ -24,8 +23,7 @@ import org.eclipse.jdt.annotation.Nullable;
 public class BondDeviceConfiguration {
 
     /**
-     * Configuration for a Bond Bridge or Device
+     * Configuration for a Bond Device
      */
     public String deviceId = "deviceId";
-    public @Nullable String localToken = "localToken";
 }

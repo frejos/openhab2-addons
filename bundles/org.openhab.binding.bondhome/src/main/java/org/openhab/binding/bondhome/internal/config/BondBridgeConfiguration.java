@@ -25,7 +25,7 @@ import org.eclipse.jdt.annotation.Nullable;
 public class BondBridgeConfiguration {
 
     /**
-     * Configuration for a Bond Bridge or Device
+     * Configuration for a Bond Bridge
      */
     public String bondId = "bondId";
     public String localToken = "localToken";
