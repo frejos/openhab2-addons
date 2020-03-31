@@ -199,6 +199,8 @@ public enum BondDeviceAction {
     // ^^ Close the device.
     ToggleOpen("ToggleOpen", CHANNEL_GROUP_SHADES, CHANNEL_OPEN_CLOSE),
     // ^^ Close the device if it's open, open it if it's closed
+    Preset("Preset", CHANNEL_GROUP_SHADES, CHANNEL_PRESET),
+    // ^^ Sets a shade to a preset level
 
     // Other actions
     Stop("Stop", CHANNEL_GROUP_LIGHT, CHANNEL_STOP),

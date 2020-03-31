@@ -103,6 +103,7 @@ public class BondHomeBindingConstants {
     public static final String CHANNEL_GROUP_SHADES = "shadeChannels";
     public static final String CHANNEL_OPEN_CLOSE = "shadeChannels#openShade";
     public static final String CHANNEL_HOLD = "shadeChannels#hold";
+    public static final String CHANNEL_PRESET = "shadeChannels#preset";
 
     /**
      * Configuration arguments

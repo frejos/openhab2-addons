@@ -15,7 +15,7 @@
 
 		<channel-groups>
 			<channel-group id="commonChannels" typeId="commonChannelGroup" />
-			<channel-group id="fireplaceChannels" typeId="ceilingFanChannelGroup" />
+			<channel-group id="fireplaceChannels" typeId="fireplaceChannelGroup" />
 		</channel-groups>
 
 		<representation-property>deviceId</representation-property>

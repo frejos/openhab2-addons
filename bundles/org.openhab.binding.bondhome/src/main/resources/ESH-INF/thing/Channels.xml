@@ -288,7 +288,14 @@
 	<channel-type id="holdChannelType" advanced="false">
 		<item-type>Switch</item-type>
 		<label>Hold</label>
-		<description>Tells a device to stop moving</description>
+		<description>Tells a shade to stop moving</description>
+		<category>Rollershutter</category>
+	</channel-type>
+
+	<channel-type id="presetChannelType" advanced="false">
+		<item-type>Switch</item-type>
+		<label>Preset</label>
+		<description>Tells a shade to go to a set preset level</description>
 		<category>Rollershutter</category>
 	</channel-type>
 

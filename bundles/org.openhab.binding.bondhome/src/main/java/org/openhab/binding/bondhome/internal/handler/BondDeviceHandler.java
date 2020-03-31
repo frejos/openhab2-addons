@@ -90,6 +90,8 @@ public class BondDeviceHandler extends BaseThingHandler {
     public BondDeviceHandler(Thing thing) {
         super(thing);
         fullyInitialized = false;
+        config = getConfigAs(BondDeviceConfiguration.class);
+        logger.trace("Created handler for bond device with device id {}.", config.deviceId);
     }
 
     @Override
@@ -400,6 +402,10 @@ public class BondDeviceHandler extends BaseThingHandler {
                     api.executeDeviceAction(config.deviceId, BondDeviceAction.Hold, null);
                     break;
 
+                case CHANNEL_PRESET:
+                    api.executeDeviceAction(config.deviceId, BondDeviceAction.Preset, null);
+                    break;
+
                 default:
                     logger.info("Command {} on unknown channel {}, {}", command.toFullString(), channelUID.getId(),
                             channelUID.toString());
@@ -569,7 +575,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         changeThingType(currentType.getThingTypeUID(), newConfiguration);
 
         // Get the re-created thing to edit
-        final ThingBuilder thingBuilder = editThing();
+        ThingBuilder thingBuilder = editThing();
 
         // Now, look at the whole list of possible channels
         List<BondDeviceAction> availableActions = Arrays.asList(currentActions);

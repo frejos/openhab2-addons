@@ -72,10 +72,11 @@
 	</channel-group-type>
 
 	<channel-group-type id="shadeChannelGroup">
-		<label>Fireplace</label>
+		<label>Motorized Shades</label>
 		<channels>
 			<channel id="openShade" typeId="openShadeChannelType" />
 			<channel id="hold" typeId="holdChannelType" />
+			<channel id="preset" typeId="presetChannelType" />
 		</channels>
 	</channel-group-type>
 
