@@ -1,56 +1,131 @@
-# BondHome Binding
+# Bond Home Binding
 
-_Give some details about what this binding is meant for - a protocol, system, specific device._
+This binding supports radio (RF 315-433MHz) and IR devices controlled by a (Bond Home Bridge)[https://bondhome.io/products/].
+The Bond bridge and its associated app can control nearly any RF or IR device, but specializes in ceiling fans, fireplaces, and motorized shades.
+The Bridge works by recording the RF or IR signal from the factory remote and replaying the command when requested.
+Olibra, the makers of the Bond, also maintains a large database of common remotes meaning all commands from a particular remote can often be looked up after programming a single command.
+This binding does not attempt to replicate the ability to program new remotes or commands - that should be done using the Bond app.
+Instead, this binding mearly communicates with the Bridge in order to control the devices.
 
-_If possible, provide some resources like pictures, a YouTube video, etc. to give an impression of what can be done with this binding. You can place such resources into a `doc` folder next to this README.md._
+Keep in mind when using this binding that all of the limitations of the Bond Bridge and of using typical state-less ceiling fan remotes still apply.
+That is - we have no way of being aware of any changes made using the physical device remote and toggle commands (like those for ceiling fan lights) may become out of sync with the real state of the light causing an "OFF" command to turn the light "ON" and vice-versa.
 
 ## Supported Things
 
-_Please describe the different supported things / devices within this section._
-_Which different types are supported, which models were tested etc.?_
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/ESH-INF/thing``` of your binding._
+This binding was developed and tested primarily for remote controlled ceiling fans, but any Bond-supported device should work.
+
+The available thing types are:
+
+| Device           | Serialized As | Thing Type       | Description |
+|------------------|---------------|------------------|-------------|
+| Bond Bridge      |               | bondBridge       | The RF/IR/Wifi Bridge |
+| Ceiling Fan      | CF            | bondFan          | An RF or IR remote controlling a ceiling fan with or without a light |
+| Motorized Shades | MS            | bondShades       | An RF or IR remote controlled fireplace with or without a fan |
+| Fireplace        | FP            | bondFireplace    | An RF or IR remote controlled motorized shade |
+| Generic device   | GX            | bondGenericThing | A generic RF or IR remote controlled device |
 
 ## Discovery
 
-_Describe the available auto-discovery features here. Mention for what it works and what needs to be kept in mind when using it._
+The Bond bridge itself cannot be discovered and must be manually created.
+To create the bridge thing, you must have both the Bond bridge serial number and local token.
+Both are viewable in the Bond app.
+After manually creating the Bond Bridge thing, a scan can be done for any devices registered to that bridge.
+The type of device (ie, fan vs shades vs fireplace) _should_ be detected at discovery, but auto-discovered devices might end up labeled as "ceiling fan" regardless.
+In the case of a device being mistakenly discovered as a ceiling fan, try adding it manually.
 
 ## Binding Configuration
 
-_If your binding requires or supports general configuration settings, please create a folder ```cfg``` and place the configuration file ```<bindingId>.cfg``` inside it. In this section, you should link to this file and provide some information about the options. The file could e.g. look like:_
-
-```
-# Configuration for the Philips Hue Binding
-#
-# Default secret key for the pairing of the Philips Hue Bridge.
-# It has to be between 10-40 (alphanumeric) characters
-# This may be changed by the user for security reasons.
-secret=openHABSecret
-```
-
-_Note that it is planned to generate some part of this based on the information that is available within ```src/main/resources/ESH-INF/binding``` of your binding._
-
-_If your binding does not offer any generic configurations, you can remove this section completely._
+There is no configuration required for the binding itself.
 
 ## Thing Configuration
 
-_Describe what is needed to manually configure a thing, either through the (Paper) UI or via a thing-file. This should be mainly about its mandatory and optional configuration parameters. A short example entry for a thing file can help!_
+To create a Bond Bridge thing, both the device id and local token are required.
+Both are viewable in the Bond app.
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/ESH-INF/thing``` of your binding._
+
+| Parameter ID  | Parameter Type | Mandatory | Description                                         | Default |
+|---------------|----------------|-----------|-----------------------------------------------------|---------|
+| bondId        | text           | true      | The serial number of the Bond bridge (ie ZZBL...)   |         |
+| localToken    | text           | true      | The local access token for the bridge               |         |
+| bondIpAddress | text           | false     | The IP of the bridge; attempts to detect if omitted |         |
+
+
+Example Bridge:
+
+```
+Bridge bondhome:bondBridge:myBridge "My Bond Bridge" @ "Living Room" [ bondId="ZZBLxxx", localToken="abc123..." ]
+```
+
+To create any other device, only the bridge id and  device id is required.
+
+| Parameter ID | Parameter Type | Mandatory | Description                             | Default |
+|--------------|----------------|-----------|-----------------------------------------|---------|
+| deviceId     | text           | true      | The device id, viewable in the Bond app |         |
+
+Example Thing:
+
+```
+Thing bondhome:bondFan:bondBridge:myFan (bondhome:bondBridge:myBridge) "My Ceiling Fan" @ "Living Room" [deviceId = "abc1234"]
+```
+
+Example Bridge with multiple devices:
+
+```
+Bridge bondhome:bondBridge:myBridge "My Bond Bridge" @ "Living Room" [ bondId="ZZBLxxx", localToken="abc123..." ] {
+    Thing bondFan          MyFan1   "My Ceiling Fan"   @ "Living Room" [deviceId = "abc1234"]
+    Thing bondFan          MyFan2   "My Other Fan"     @ "Bedroom"     [deviceId = "abc1234"]
+    Thing bondShades       MyShades "My Roller Shades" @ "Bedroom"     [deviceId = "abc1234"]
+    Thing bondFireplace    MyFP     "My Fireplace"     @ "Bedroom"     [deviceId = "abc1234"]
+    Thing bondGenericThing MyTV     "My TV"            @ "Living Room" [deviceId = "abc1234"]
+}
+```
+
 
 ## Channels
 
-_Here you should provide information about available channel types, what their meaning is and how they can be used._
+Exactly which channels are available will depend on the commands available for that remote.
+During initialization, the binding queries the Bond bridge for possible commands and then deletes any channels that do not apply.
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/ESH-INF/thing``` of your binding._
+| Channel Group      | Channel           | Type     | Description                                        | Appies to    |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| commonChannels     | power                    | Switch   | Device power                                       | All devices  |
+| commonChannels     | lastUpdate               | DateTime | Timestamp of last status update                    | All devices  |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| ceilingFanChannels | fanSpeed                 | Dimmer   | Sets fan speed                                     | Ceiling Fans |
+| ceilingFanChannels | breezeState              | Dimmer   | Enables or disables breeze mode                    | Ceiling Fans |
+| ceilingFanChannels | breezeMean               | Number   | Sets the average speed in breeze mode              | Ceiling Fans |
+| ceilingFanChannels | breezeVariability        | Number   | Sets the variability of the speed in breeze mode   | Ceiling Fans |
+| ceilingFanChannels | direction                | Switch   | Sets the fan direction; forward or reverse         | Ceiling Fans |
+| ceilingFanChannels | timer                    | Number   | Starts a timer for s seconds                       | Ceiling Fans |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| lightChannels      | light                    | Switch   | Turns the light on the ceiling fan on or off       | Ceiling Fans |
+| lightChannels      | brightness               | Dimmer   | Adjusts the brightness of the fan light            | Ceiling Fans |
+| lightChannels      | dimmerStartStop          | Switch   | Starts changing the brightness of the fan light    | Ceiling Fans |
+| lightChannels      | dimmerIncr               | Switch   | Starts increasing the brightness of the fan light  | Ceiling Fans |
+| lightChannels      | dimmerDcr                | Switch   | Starts decreasing the brightness of the fan light  | Ceiling Fans |
+| lightChannels      | stop                     | Switch   | Stops changing brightness                          | Ceiling Fans |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| upLightChannels    | upLight                  | Switch   | Turns the up-light on a fan on or off              | Ceiling Fans |
+| upLightChannels    | upLightEnable            | Switch   | Enables or disables the up light\*                 | Ceiling Fans |
+| upLightChannels    | upLightBrightness        | Dimmer   | Adjusts the brightness of the up light             | Ceiling Fans |
+| upLightChannels    | upLightDimmerStartStop   | Switch   | Starts changing the brightness of the up light     | Ceiling Fans |
+| upLightChannels    | upLightDimmerIncr        | Switch   | Starts increasing the brightness of the up light   | Ceiling Fans |
+| upLightChannels    | upLightDimmerDcr         | Switch   | Starts decreasing the brightness of the up light   | Ceiling Fans |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| downLightChannels  | downLight                | Switch   | Turns the down-light on a fan on or off            | Ceiling Fans |
+| downLightChannels  | downLightEnable          | Switch   | Enables or disables the down light\*               | Ceiling Fans |
+| downLightChannels  | downLightBrightness      | Dimmer   | Adjusts the brightness of the down light           | Ceiling Fans |
+| downLightChannels  | downLightDimmerStartStop | Switch   | Starts changing the brightness of the down light   | Ceiling Fans |
+| downLightChannels  | downLightDimmerIncr      | Switch   | Starts increasing the brightness of the down light | Ceiling Fans |
+| downLightChannels  | downLightDimmerDcr       | Switch   | Starts decreasing the brightness of the down light | Ceiling Fans |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| downLightChannels  | flame                    | Dimmer   | Turns on or adjust the flame level                 | Fireplaces   |
+| downLightChannels  | fpFanPower               | Switch   | Turns the fireplace fan on or off                  | Fireplaces   |
+| downLightChannels  | fpFanSpeed               | Dimmer   | Adjusts the speed of the fireplace fan             | Fireplaces   |
+|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| shadeChannels      | openShade                | Switch   | Opens or closes motorize shades            | Motor Shades |
+| shadeChannels      | hold                     | Switch   | Tells a device to stop moving               | Motor Shades   |
 
-| channel  | type   | description                  |
-|----------|--------|------------------------------|
-| control  | Switch | This is the control channel  |
+\* If the fan up or down light is "enabled" it will turn on when the "light" channel is turned on.
 
-## Full Example
-
-_Provide a full usage example based on textual configuration files (*.things, *.items, *.sitemap)._
-
-## Any custom content here!
-
-_Feel free to add additional sections for whatever you think should also be mentioned about your binding!_
+Note:  For fan lights, the brightness cannot generally be set to a given level, only changed from the current level.
