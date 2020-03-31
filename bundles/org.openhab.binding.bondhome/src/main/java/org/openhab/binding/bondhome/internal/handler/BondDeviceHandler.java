@@ -410,7 +410,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        logger.debug("Starting initialization for Bond device with device id {}!", config.deviceId);
+        logger.trace("Starting initialization for Bond device!");
         config = getConfigAs(BondDeviceConfiguration.class);
         fullyInitialized = false;
 
