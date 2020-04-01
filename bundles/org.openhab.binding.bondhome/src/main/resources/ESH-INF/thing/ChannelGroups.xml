@@ -11,6 +11,7 @@
 		<channels>
 			<channel id="power" typeId="powerChannelType" />
 			<channel id="lastUpdate" typeId="lastUpdateType" />
+			<channel id="stop" typeId="stopChannelType" />
 		</channels>
 	</channel-group-type>
 
@@ -34,7 +35,6 @@
 			<channel id="dimmerStartStop" typeId="dimmerStartStopChannelType" />
 			<channel id="dimmerIncr" typeId="dimmerIncrChannelType" />
 			<channel id="dimmerDcr" typeId="dimmerDcrChannelType" />
-			<channel id="stop" typeId="stopChannelType" />
 		</channels>
 	</channel-group-type>
 

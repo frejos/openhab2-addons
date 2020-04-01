@@ -203,7 +203,7 @@ public enum BondDeviceAction {
     // ^^ Sets a shade to a preset level
 
     // Other actions
-    Stop("Stop", CHANNEL_GROUP_LIGHT, CHANNEL_STOP),
+    Stop("Stop", CHANNEL_GROUP_COMMON, CHANNEL_STOP),
     // ^^ This action tells the Bond to stop any in-progress transmission and empty
     // its transmission queue.
     Hold("Hold", CHANNEL_GROUP_SHADES, CHANNEL_HOLD),

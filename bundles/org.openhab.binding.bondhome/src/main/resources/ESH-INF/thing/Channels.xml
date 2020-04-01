@@ -249,8 +249,8 @@
 
 	<channel-type id="stopChannelType" advanced="false">
 		<item-type>Switch</item-type>
-		<label>Stop Dimming Adjustment</label>
-		<description>Stops a dimming or other change action</description>
+		<label>Stop</label>
+		<description>Stops any ongong change actions</description>
 		<category>Switch</category>
 		<tags>
 			<tag>Switchable</tag>

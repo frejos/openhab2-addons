@@ -89,6 +89,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
     public BondDeviceHandler(Thing thing) {
         super(thing);
+        disposed = true;
         fullyInitialized = false;
         config = getConfigAs(BondDeviceConfiguration.class);
         logger.trace("Created handler for bond device with device id {}.", config.deviceId);
@@ -207,7 +208,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                                         ? BondDeviceAction.IncreaseBrightness
                                         : BondDeviceAction.DecreaseBrightness),
                                 null);
-                        updateState(CHANNEL_STOP, OnOffType.ON);
                     } else {
                         logger.info("Unsupported command on fan light brightness channel");
                     }
@@ -217,12 +217,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan light dimmer start/stop command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
-                    updateState(CHANNEL_STOP, OnOffType.ON);
-                    // Unset in 30 seconds when this times out
-                    scheduler.schedule(() -> {
-                        updateState(CHANNEL_STOP, OnOffType.OFF);
-                        updateState(CHANNEL_LIGHT_START_STOP, OnOffType.ON);
-                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_LIGHT_DIRECTIONAL_INC:
@@ -231,12 +225,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                             command == OnOffType.ON ? BondDeviceAction.StartIncreasingBrightness
                                     : BondDeviceAction.Stop,
                             null);
-                    updateState(CHANNEL_STOP, OnOffType.ON);
-                    // Unset in 30 seconds when this times out
-                    scheduler.schedule(() -> {
-                        updateState(CHANNEL_STOP, OnOffType.OFF);
-                        updateState(CHANNEL_LIGHT_DIRECTIONAL_INC, OnOffType.ON);
-                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_LIGHT_DIRECTIONAL_DECR:
@@ -245,12 +233,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                             command == OnOffType.ON ? BondDeviceAction.StartDecreasingBrightness
                                     : BondDeviceAction.Stop,
                             null);
-                    updateState(CHANNEL_STOP, OnOffType.ON);
-                    // Unset in 30 seconds when this times out
-                    scheduler.schedule(() -> {
-                        updateState(CHANNEL_STOP, OnOffType.OFF);
-                        updateState(CHANNEL_LIGHT_DIRECTIONAL_DECR, OnOffType.ON);
-                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_UP_LIGHT_ENABLE:
@@ -292,12 +274,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan up light dimmer change command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
-                    updateState(CHANNEL_STOP, OnOffType.ON);
-                    // Unset in 30 seconds when this times out
-                    scheduler.schedule(() -> {
-                        updateState(CHANNEL_STOP, OnOffType.OFF);
-                        updateState(CHANNEL_UP_LIGHT_START_STOP, OnOffType.ON);
-                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_UP_LIGHT_DIRECTIONAL_INC:
@@ -344,12 +320,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan down light dimmer change command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
-                    updateState(CHANNEL_STOP, OnOffType.ON);
-                    // Unset in 30 seconds when this times out
-                    scheduler.schedule(() -> {
-                        updateState(CHANNEL_STOP, OnOffType.OFF);
-                        updateState(CHANNEL_DOWN_LIGHT_START_STOP, OnOffType.ON);
-                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC:
@@ -419,9 +389,9 @@ public class BondDeviceHandler extends BaseThingHandler {
         logger.trace("Starting initialization for Bond device!");
         config = getConfigAs(BondDeviceConfiguration.class);
         fullyInitialized = false;
+        disposed = false;
 
         // set the thing status to UNKNOWN temporarily
-        disposed = false;
         updateStatus(ThingStatus.UNKNOWN);
 
         // Example for background initialization:
@@ -431,19 +401,10 @@ public class BondDeviceHandler extends BaseThingHandler {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                         "No Bond bridge is associated with this Bond device");
                 logger.error("No Bond bridge is associated with this Bond device - cannot create device!");
-
                 return;
             } else {
-                BondBridgeHandler myBridgeHandler = (BondBridgeHandler) myBridge.getHandler();
-                if (myBridgeHandler != null) {
-                    this.api = myBridgeHandler.getBridgeAPI();
-                    initializeThing();
-                    logger.debug("Finished initializing!");
-                } else {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                            "Cannot access API for Bridge associated with this Bond device");
-                    logger.error("Cannot access API for Bridge associated with this Bond device!");
-                }
+                getBridgeAndAPI();
+                initializeThing();
             }
         });
 
@@ -457,7 +418,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                             "Bridge API not available");
                     return;
                 } else {
-                    logger.trace("Polling for current state for {}", this.getThing().getLabel());
+                    logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
                     try {
                         deviceState = api.getDeviceState(config.deviceId);
                         updateChannelsFromState(deviceState);
@@ -484,81 +445,83 @@ public class BondDeviceHandler extends BaseThingHandler {
         this.pollingJob = null;
     }
 
-    @Override
-    public synchronized void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
-        logger.debug("bridgeStatusChanged for {}. Reseting handler", this.getThing().getUID());
-        this.dispose();
-        this.initialize();
-    }
-
-    private synchronized void initializeThing() {
+    private void initializeThing() {
         BondHttpApi api = this.api;
-        if (api != null) {
+        if (api == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
+            return;
+        } else {
             try {
-                logger.trace("Getting device information for {}", config.deviceId);
+                logger.trace("Getting device information for {} ({})", config.deviceId, this.getThing().getLabel());
                 deviceInfo = api.getDevice(config.deviceId);
-                logger.trace("Getting device properties for {}", config.deviceId);
+                logger.trace("Getting device properties for {} ({})", config.deviceId, this.getThing().getLabel());
                 deviceProperties = api.getDeviceProperties(config.deviceId);
-                logger.trace("Getting device state for {}", config.deviceId);
-                deviceState = api.getDeviceState(config.deviceId);
             } catch (IOException e) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+                return;
             }
-        }
 
-        BondDevice devInfo = this.deviceInfo;
-        BondDeviceProperties devProperties = this.deviceProperties;
-        BondDeviceState devState = this.deviceState;
-        String lastBindingVersion = this.getThing().getProperties().get(PROPERTIES_BINDING_VERSION);
+            BondDevice devInfo = this.deviceInfo;
+            BondDeviceProperties devProperties = this.deviceProperties;
+            if (devInfo == null || devProperties == null) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "Unable to get device properties from Bond");
+                return;
+            }
 
-        // Update all the thing properties based on the result
-        Map<String, String> thingProperties = new HashMap<String, String>();
-        if (devInfo != null) {
-            logger.trace("Updating device name to {}", devInfo.name);
-            thingProperties.put(PROPERTIES_DEVICE_NAME, devInfo.name);
-        }
-        if (devProperties != null) {
-            logger.trace("Updating other device properties for {}", config.deviceId);
-            thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.maxSpeed));
-            thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trustState));
-            thingProperties.put(PROPERTIES_ADDRESS, String.valueOf(devProperties.addr));
-            thingProperties.put(PROPERTIES_RF_FREQUENCY, String.valueOf(devProperties.freq));
-            thingProperties.put(PROPERTIES_BINDING_VERSION, CURRENT_BINDING_VERSION);
-        }
-        logger.trace("Saving properties for {}", config.deviceId);
-        updateProperties(thingProperties);
-
-        // Recreate all possible channels from xml and delete the extras based on the available actions
-        if (devInfo != null) {
             // Anytime the configuration has changed or the binding has been updated,
             // recreate the thing to make sure all possible channels are available
-            final @Nullable String lastDeviceConfigurationHash = config.lastDeviceConfigurationHash;
-            if (!devInfo.hash.equals(lastDeviceConfigurationHash)
-                    || !lastBindingVersion.equals(CURRENT_BINDING_VERSION)) {
-                recreateChannels(devInfo.type, devInfo.hash, devInfo.actions);
+            if (wasBindingUpdated()) {
+                recreateAllChannels(devInfo.type, devInfo.hash);
+                return;
             }
-        }
 
-        // Update all channels with current states
-        if (devState != null) {
-            logger.trace("Updating channels with current states for {}", config.deviceId);
-            updateChannelsFromState(devState);
-        }
+            // Anytime the configuration has changed or the binding has been updated,
+            // recreate the thing to make sure all possible channels are available
+            if (wasThingUpdatedExternally(devInfo)) {
+                recreateAllChannels(devInfo.type, devInfo.hash);
+                return;
+            }
 
-        // Now we're online!
-        updateStatus(ThingStatus.ONLINE);
-        fullyInitialized = true;
+            updateDevicePropertiesFromBond(devInfo, devProperties);
+
+            deleteExtraChannels(devInfo.actions);
+
+            // Now we're online!
+            updateStatus(ThingStatus.ONLINE);
+            fullyInitialized = true;
+            logger.debug("Finished initializing!");
+        }
     }
 
-    private synchronized void recreateChannels(BondDeviceType currentType, String currentHash,
-            BondDeviceAction[] currentActions) {
+    private void updateDevicePropertiesFromBond(BondDevice devInfo, BondDeviceProperties devProperties) {
         if (hasConfigurationError() || disposed) {
+            logger.trace("Don't update, I've been disposed!");
             return;
         }
 
-        logger.debug(
-                "Recreating all possible channels for a {} and deleting extras based on the available actions for {}",
-                currentType.getThingTypeUID().getAsString(), config.deviceId);
+        // Update all the thing properties based on the result
+        Map<String, String> thingProperties = new HashMap<String, String>();
+        thingProperties.put(PROPERTIES_BINDING_VERSION, CURRENT_BINDING_VERSION);
+        logger.trace("Updating device name to {}", devInfo.name);
+        thingProperties.put(PROPERTIES_DEVICE_NAME, devInfo.name);
+        logger.trace("Updating other device properties for {} ({})", config.deviceId, this.getThing().getLabel());
+        thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.maxSpeed));
+        thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trustState));
+        thingProperties.put(PROPERTIES_ADDRESS, String.valueOf(devProperties.addr));
+        thingProperties.put(PROPERTIES_RF_FREQUENCY, String.valueOf(devProperties.freq));
+        logger.trace("Saving properties for {} ({})", config.deviceId, this.getThing().getLabel());
+        updateProperties(thingProperties);
+    }
+
+    private synchronized void recreateAllChannels(BondDeviceType currentType, String currentHash) {
+        if (hasConfigurationError() || disposed) {
+            logger.trace("Don't recreate channels, I've been disposed!");
+            return;
+        }
+
+        logger.debug("Recreating all possible channels for a {} for {} ({})",
+                currentType.getThingTypeUID().getAsString(), config.deviceId, this.getThing().getLabel());
 
         // Create a new configuration
         final Map<String, Object> map = new HashMap<>();
@@ -573,8 +536,16 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         // Change the thing type back to itself to force all channels to be re-created from XML
         changeThingType(currentType.getThingTypeUID(), newConfiguration);
+    }
 
-        // Get the re-created thing to edit
+    private synchronized void deleteExtraChannels(BondDeviceAction[] currentActions) {
+        if (hasConfigurationError() || disposed) {
+            logger.trace("Don't delete channels, I've been disposed!");
+            return;
+        }
+
+        logger.trace("Deleting channels based on the available actions");
+        // Get the thing to edit
         ThingBuilder thingBuilder = editThing();
 
         // Now, look at the whole list of possible channels
@@ -613,7 +584,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         }
 
         if (updateState != null) {
-            logger.debug("Updating channels from state for {}", config.deviceId);
+            logger.debug("Updating channels from state for {} ({})", config.deviceId, this.getThing().getLabel());
 
             updateStatus(ThingStatus.ONLINE);
             updateState(CHANNEL_LAST_UPDATE, new DateTimeType());
@@ -629,9 +600,6 @@ public class BondDeviceHandler extends BaseThingHandler {
                 logger.trace("Raw fan speed: {}, Percent: {}", updateState.speed, value);
             } else if (updateState.speed != 0 && this.getThing().getThingTypeUID().equals(THING_TYPE_BOND_FAN)) {
                 logger.info("Unable to convert fan speed to a percent for {}!", this.getThing().getLabel());
-                scheduler.schedule(() -> {
-                    initializeThing();
-                }, 30, TimeUnit.SECONDS);
             }
             updateState(CHANNEL_FAN_SPEED, new PercentType(value));
             updateState(CHANNEL_FAN_BREEZE_STATE, updateState.breeze[0] == 0 ? OnOffType.OFF : OnOffType.ON);
@@ -684,4 +652,60 @@ public class BondDeviceHandler extends BaseThingHandler {
                 && statusInfo.getStatusDetail() == ThingStatusDetail.CONFIGURATION_ERROR;
     }
 
+    private synchronized boolean wasBindingUpdated() {
+        // Check if the binding has been updated
+        boolean updatedBinding = true;
+        @Nullable
+        String lastBindingVersion = this.getThing().getProperties().get(PROPERTIES_BINDING_VERSION);
+        if (lastBindingVersion != null) {
+            updatedBinding = !lastBindingVersion.equals(CURRENT_BINDING_VERSION);
+        }
+        if (updatedBinding) {
+            logger.info("Bond Home binding has been updated.");
+            logger.info("Current version is {}, prior version was {}.", CURRENT_BINDING_VERSION, lastBindingVersion);
+
+            // Update the thing with the new property value
+            final Map<String, String> newProperties = new HashMap<>(thing.getProperties());
+            newProperties.put(PROPERTIES_BINDING_VERSION, CURRENT_BINDING_VERSION);
+
+            final ThingBuilder thingBuilder = editThing();
+            thingBuilder.withProperties(newProperties);
+            updateThing(thingBuilder.build());
+        }
+        return updatedBinding;
+    }
+
+    private synchronized boolean wasThingUpdatedExternally(BondDevice devInfo) {
+        // Check if the Bond hash tree has changed
+        config = getConfigAs(BondDeviceConfiguration.class);
+        final String lastDeviceConfigurationHash = config.lastDeviceConfigurationHash;
+        boolean updatedHashTree = !devInfo.hash.equals(lastDeviceConfigurationHash);
+        if (updatedHashTree) {
+            logger.info("Hash tree of device has been updated by Bond.");
+            logger.info("Current state is {}, prior state was {}.", devInfo.hash, lastDeviceConfigurationHash);
+        }
+        return updatedHashTree;
+    }
+
+    private boolean getBridgeAndAPI() {
+        Bridge myBridge = this.getBridge();
+        if (myBridge == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "No Bond bridge is associated with this Bond device");
+            logger.error("No Bond bridge is associated with this Bond device - cannot create device!");
+
+            return false;
+        } else {
+            BondBridgeHandler myBridgeHandler = (BondBridgeHandler) myBridge.getHandler();
+            if (myBridgeHandler != null) {
+                this.api = myBridgeHandler.getBridgeAPI();
+                return true;
+            } else {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "Cannot access API for Bridge associated with this Bond device");
+                logger.error("Cannot access API for Bridge associated with this Bond device!");
+                return false;
+            }
+        }
+    }
 }

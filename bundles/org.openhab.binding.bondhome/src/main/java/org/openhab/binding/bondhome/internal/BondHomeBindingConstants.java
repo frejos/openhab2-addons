@@ -30,7 +30,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class BondHomeBindingConstants {
 
     public static final String BINDING_ID = "bondhome";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.01";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.11";
 
     /**
      * List of all Thing Type UIDs.
@@ -58,6 +58,7 @@ public class BondHomeBindingConstants {
     public static final String CHANNEL_GROUP_COMMON = "commonChannels";
     public static final String CHANNEL_POWER_STATE = "commonChannels#power";
     public static final String CHANNEL_LAST_UPDATE = "commonChannels#lastUpdate";
+    public static final String CHANNEL_STOP = "commonChannels#stop";
 
     // Ceiling fan channels
     public static final String CHANNEL_GROUP_FAN = "ceilingFanChannels";
@@ -75,7 +76,6 @@ public class BondHomeBindingConstants {
     public static final String CHANNEL_LIGHT_START_STOP = "lightChannels#dimmerStartStop";
     public static final String CHANNEL_LIGHT_DIRECTIONAL_INC = "lightChannels#dimmerIncr";
     public static final String CHANNEL_LIGHT_DIRECTIONAL_DECR = "lightChannels#dimmerDcr";
-    public static final String CHANNEL_STOP = "lightChannels#stop";
 
     public static final String CHANNEL_GROUP_UP_LIGHT = "upLightChannels";
     public static final String CHANNEL_UP_LIGHT_STATE = "upLightChannels#upLight";

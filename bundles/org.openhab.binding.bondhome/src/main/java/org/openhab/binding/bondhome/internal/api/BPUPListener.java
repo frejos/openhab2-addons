@@ -104,25 +104,26 @@ public class BPUPListener extends Thread {
         DatagramPacket inPacket = new DatagramPacket(buffer, buffer.length);
 
         DatagramSocket sock = this.socket;
-        if (sock != null)
+        if (sock != null) {
             logger.trace("Sending keep-alive request ('\\n')");
-        try {
-            byte[] outBuffer = { (byte) '\n' };
-            InetAddress inetAddress = InetAddress.getByName(bridgeHandler.getBridgeIpAddress());
-            DatagramPacket outPacket = new DatagramPacket(outBuffer, 1, inetAddress, BOND_BPUP_PORT);
-            sock.send(outPacket);
-            sock.receive(inPacket);
-            BPUPUpdate response = transformUpdatePacket(inPacket);
-            if (response != null) {
-                if (!response.bondId.equalsIgnoreCase(bridgeHandler.getBridgeId())) {
-                    logger.warn("Reponse isn't from expected Bridge!  Expected: {}  Got: {}",
-                            bridgeHandler.getBridgeId(), response.bondId);
+            try {
+                byte[] outBuffer = { (byte) '\n' };
+                InetAddress inetAddress = InetAddress.getByName(bridgeHandler.getBridgeIpAddress());
+                DatagramPacket outPacket = new DatagramPacket(outBuffer, 1, inetAddress, BOND_BPUP_PORT);
+                sock.send(outPacket);
+                sock.receive(inPacket);
+                BPUPUpdate response = transformUpdatePacket(inPacket);
+                if (response != null) {
+                    if (!response.bondId.equalsIgnoreCase(bridgeHandler.getBridgeId())) {
+                        logger.warn("Reponse isn't from expected Bridge!  Expected: {}  Got: {}",
+                                bridgeHandler.getBridgeId(), response.bondId);
+                    }
                 }
+            } catch (SocketTimeoutException e) {
+                logger.trace("BPUP Socket timeout");
+            } catch (IOException e) {
+                logger.debug("One exception has occurred: {} ", e.getMessage());
             }
-        } catch (SocketTimeoutException e) {
-            logger.trace("BPUP Socket timeout");
-        } catch (IOException e) {
-            logger.debug("One exception has occurred: {} ", e.getMessage());
         }
     }
 
