@@ -8,9 +8,9 @@
 	<bridge-type id="bondBridge">
 		<label>Bond Home Bridge</label>
 		<description>The RF/IR/Wifi Bridge</description>
+		<representation-property>bondId</representation-property>
 		<config-description-ref uri="bondhome:bondbridge:config" />
 	</bridge-type>
 
-	<representation-property>bondId</representation-property>
 
 </thing:thing-descriptions>
