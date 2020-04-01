@@ -26,10 +26,9 @@ The available thing types are:
 
 ## Discovery
 
-The Bond bridge itself cannot be discovered and must be manually created.
-To create the bridge thing, you must have both the Bond bridge serial number and local token.
-Both are viewable in the Bond app.
-After manually creating the Bond Bridge thing, a scan can be done for any devices registered to that bridge.
+The Bond bridge can be found automatically by mDNS, but is not usable until the serial number and local token are added.
+Both the Bond bridge serial number and local token are viewable in the Bond app.
+After creating the Bond Bridge thing, a scan can be done for any devices registered to that bridge.
 The type of device (ie, fan vs shades vs fireplace) _should_ be detected at discovery, but auto-discovered devices might end up labeled as "ceiling fan" regardless.
 In the case of a device being mistakenly discovered as a ceiling fan, try adding it manually.
 
