@@ -20,7 +20,7 @@
 
 		<representation-property>deviceId</representation-property>
 
-		<config-description-ref uri="bondhome:bonddevice:config" />
+		<config-description-ref uri="thing-type:bondhome:bonddevice" />
 
 	</thing-type>
 
