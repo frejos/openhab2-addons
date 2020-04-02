@@ -80,6 +80,8 @@ public class BondDeviceHandler extends BaseThingHandler {
     private volatile boolean disposed;
     private volatile boolean fullyInitialized;
 
+    private long latestUpdate = -1;
+
     /**
      * The supported thing types.
      */
@@ -109,12 +111,18 @@ public class BondDeviceHandler extends BaseThingHandler {
             return;
         } else {
             if (command instanceof RefreshType) {
-                logger.trace("Executing refresh command");
-                try {
-                    deviceState = api.getDeviceState(config.deviceId);
-                    updateChannelsFromState(deviceState);
-                } catch (IOException e) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                long now = System.currentTimeMillis();
+                long timePassedFromLastUpdateInSeconds = (now - latestUpdate) / 1000;
+                if (latestUpdate < 0 || timePassedFromLastUpdateInSeconds > 15) {
+                    logger.trace("Executing refresh command");
+                    try {
+                        deviceState = api.getDeviceState(config.deviceId);
+                        updateChannelsFromState(deviceState);
+                    } catch (IOException e) {
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                    }
+                } else {
+                    logger.trace("It has been less than 15s since the last update.  Please retry soon.");
                 }
                 return;
             }
@@ -396,39 +404,10 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         // Example for background initialization:
         scheduler.execute(() -> {
-            Bridge myBridge = this.getBridge();
-            if (myBridge == null) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                        "No Bond bridge is associated with this Bond device");
-                logger.error("No Bond bridge is associated with this Bond device - cannot create device!");
-                return;
-            } else {
-                getBridgeAndAPI();
+            if (getBridgeAndAPI()) {
                 initializeThing();
             }
         });
-
-        // Start polling for state
-        final ScheduledFuture<?> pollingJob = this.pollingJob;
-        if (pollingJob == null || pollingJob.isCancelled()) {
-            Runnable pollingCommand = () -> {
-                BondHttpApi api = this.api;
-                if (api == null) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                            "Bridge API not available");
-                    return;
-                } else {
-                    logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
-                    try {
-                        deviceState = api.getDeviceState(config.deviceId);
-                        updateChannelsFromState(deviceState);
-                    } catch (IOException e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-                    }
-                }
-            };
-            this.pollingJob = scheduler.scheduleWithFixedDelay(pollingCommand, 60, 300, TimeUnit.SECONDS);
-        }
     }
 
     @Override
@@ -450,53 +429,57 @@ public class BondDeviceHandler extends BaseThingHandler {
         if (api == null) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
             return;
-        } else {
-            try {
-                logger.trace("Getting device information for {} ({})", config.deviceId, this.getThing().getLabel());
-                deviceInfo = api.getDevice(config.deviceId);
-                logger.trace("Getting device properties for {} ({})", config.deviceId, this.getThing().getLabel());
-                deviceProperties = api.getDeviceProperties(config.deviceId);
-            } catch (IOException e) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-                return;
-            }
-
-            BondDevice devInfo = this.deviceInfo;
-            BondDeviceProperties devProperties = this.deviceProperties;
-            if (devInfo == null || devProperties == null) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                        "Unable to get device properties from Bond");
-                return;
-            }
-
-            // Anytime the configuration has changed or the binding has been updated,
-            // recreate the thing to make sure all possible channels are available
-            if (wasBindingUpdated()) {
-                recreateAllChannels(devInfo.type, devInfo.hash);
-                return;
-            }
-
-            // Anytime the configuration has changed or the binding has been updated,
-            // recreate the thing to make sure all possible channels are available
-            if (wasThingUpdatedExternally(devInfo)) {
-                recreateAllChannels(devInfo.type, devInfo.hash);
-                return;
-            }
-
-            updateDevicePropertiesFromBond(devInfo, devProperties);
-
-            deleteExtraChannels(devInfo.actions);
-
-            // Now we're online!
-            updateStatus(ThingStatus.ONLINE);
-            fullyInitialized = true;
-            logger.debug("Finished initializing!");
         }
+
+        try {
+            logger.trace("Getting device information for {} ({})", config.deviceId, this.getThing().getLabel());
+            deviceInfo = api.getDevice(config.deviceId);
+            logger.trace("Getting device properties for {} ({})", config.deviceId, this.getThing().getLabel());
+            deviceProperties = api.getDeviceProperties(config.deviceId);
+        } catch (IOException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+            return;
+        }
+
+        BondDevice devInfo = this.deviceInfo;
+        BondDeviceProperties devProperties = this.deviceProperties;
+        if (devInfo == null || devProperties == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "Unable to get device properties from Bond");
+            return;
+        }
+
+        // Anytime the configuration has changed or the binding has been updated,
+        // recreate the thing to make sure all possible channels are available
+        // NOTE: This will cause the thing to be disposed and re-initialized
+        if (wasBindingUpdated()) {
+            recreateAllChannels(devInfo.type, devInfo.hash);
+            return;
+        }
+
+        // Anytime the configuration has changed or the binding has been updated,
+        // recreate the thing to make sure all possible channels are available
+        // NOTE: This will cause the thing to be disposed and re-initialized
+        if (wasThingUpdatedExternally(devInfo)) {
+            recreateAllChannels(devInfo.type, devInfo.hash);
+            return;
+        }
+
+        updateDevicePropertiesFromBond(devInfo, devProperties);
+
+        deleteExtraChannels(devInfo.actions);
+
+        startPollingJob();
+
+        // Now we're online!
+        updateStatus(ThingStatus.ONLINE);
+        fullyInitialized = true;
+        logger.debug("Finished initializing!");
     }
 
     private void updateDevicePropertiesFromBond(BondDevice devInfo, BondDeviceProperties devProperties) {
         if (hasConfigurationError() || disposed) {
-            logger.trace("Don't update, I've been disposed!");
+            logger.trace("Don't update properties, I've been disposed!");
             return;
         }
 
@@ -529,11 +512,6 @@ public class BondDeviceHandler extends BaseThingHandler {
         map.put(CONFIG_LATEST_HASH, currentHash);
         Configuration newConfiguration = new Configuration(map);
 
-        // Update the thing with the new configuration
-        // ThingBuilder thingBuilder = editThing();
-        // thingBuilder.withConfiguration(newConfiguration);
-        // updateThing(thingBuilder.build());
-
         // Change the thing type back to itself to force all channels to be re-created from XML
         changeThingType(currentType.getThingTypeUID(), newConfiguration);
     }
@@ -557,15 +535,16 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         for (BondDeviceAction action : availableActions) {
             availableChannelIds.add(action.getChannelTypeId());
-            logger.trace("Action: {}, Channel Type Id: {}", action.getActionId(), action.getChannelTypeId());
+            logger.trace("    Action: {},    Relevant Channel Type Id: {}",
+             action.getActionId(), action.getChannelTypeId());
         }
 
         for (Channel channel : possibleChannels) {
             if (availableChannelIds.contains(channel.getUID().getId())) {
-                logger.trace("Keeping Channel: {}", channel.getUID().getId());
+                logger.trace("      ++++ Keeping: {}", channel.getUID().getId());
             } else {
                 thingBuilder.withoutChannel(channel.getUID());
-                logger.trace("Dropping Channel: {}", channel.getUID().getId());
+                logger.trace("      ---- Dropping: {}", channel.getUID().getId());
             }
         }
 
@@ -588,6 +567,7 @@ public class BondDeviceHandler extends BaseThingHandler {
 
             updateStatus(ThingStatus.ONLINE);
             updateState(CHANNEL_LAST_UPDATE, new DateTimeType());
+            latestUpdate = System.currentTimeMillis();
             logger.trace("Update Time for {}: {}", this.getThing().getLabel(), (new DateTimeType()).toFullString());
 
             updateState(CHANNEL_POWER_STATE, updateState.power == 0 ? OnOffType.OFF : OnOffType.ON);
@@ -657,9 +637,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         boolean updatedBinding = true;
         @Nullable
         String lastBindingVersion = this.getThing().getProperties().get(PROPERTIES_BINDING_VERSION);
-        if (lastBindingVersion != null) {
-            updatedBinding = !lastBindingVersion.equals(CURRENT_BINDING_VERSION);
-        }
+        updatedBinding = !CURRENT_BINDING_VERSION.equals(lastBindingVersion);
         if (updatedBinding) {
             logger.info("Bond Home binding has been updated.");
             logger.info("Current version is {}, prior version was {}.", CURRENT_BINDING_VERSION, lastBindingVersion);
@@ -706,6 +684,30 @@ public class BondDeviceHandler extends BaseThingHandler {
                 logger.error("Cannot access API for Bridge associated with this Bond device!");
                 return false;
             }
+        }
+    }
+
+    // Start polling for state
+    private synchronized void startPollingJob() {
+        final ScheduledFuture<?> pollingJob = this.pollingJob;
+        if (pollingJob == null || pollingJob.isCancelled()) {
+            Runnable pollingCommand = () -> {
+                BondHttpApi api = this.api;
+                if (api == null) {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                            "Bridge API not available");
+                    return;
+                } else {
+                    logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
+                    try {
+                        deviceState = api.getDeviceState(config.deviceId);
+                        updateChannelsFromState(deviceState);
+                    } catch (IOException e) {
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                    }
+                }
+            };
+            this.pollingJob = scheduler.scheduleWithFixedDelay(pollingCommand, 60, 300, TimeUnit.SECONDS);
         }
     }
 }
