@@ -100,6 +100,9 @@ public class BondDeviceHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         if (hasConfigurationError() || disposed || !fullyInitialized) {
+            logger.trace(
+                    "Bond device handler for {} received command {} on channel {} but is not yet prepared to handle it.",
+                    config.deviceId, command, channelUID);
             return;
         }
 
@@ -216,6 +219,7 @@ public class BondDeviceHandler extends BaseThingHandler {
                                         ? BondDeviceAction.IncreaseBrightness
                                         : BondDeviceAction.DecreaseBrightness),
                                 null);
+                        updateState(CHANNEL_STOP, OnOffType.ON);
                     } else {
                         logger.info("Unsupported command on fan light brightness channel");
                     }
@@ -225,6 +229,13 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan light dimmer start/stop command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    updateState(CHANNEL_STOP, OnOffType.ON);
+                    // Unset in 30 seconds when this times out
+                    scheduler.schedule(() -> {
+                        logger.trace("Fan light dimmer start/stop command run for 30s");
+                        updateState(CHANNEL_STOP, OnOffType.OFF);
+                        updateState(CHANNEL_LIGHT_START_STOP, OnOffType.ON);
+                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_LIGHT_DIRECTIONAL_INC:
@@ -233,6 +244,13 @@ public class BondDeviceHandler extends BaseThingHandler {
                             command == OnOffType.ON ? BondDeviceAction.StartIncreasingBrightness
                                     : BondDeviceAction.Stop,
                             null);
+                    updateState(CHANNEL_STOP, OnOffType.ON);
+                    // Unset in 30 seconds when this times out
+                    scheduler.schedule(() -> {
+                        logger.trace("Fan light brightness increase start/stop command run for 30s");
+                        updateState(CHANNEL_STOP, OnOffType.OFF);
+                        updateState(CHANNEL_LIGHT_DIRECTIONAL_INC, OnOffType.ON);
+                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_LIGHT_DIRECTIONAL_DECR:
@@ -241,6 +259,13 @@ public class BondDeviceHandler extends BaseThingHandler {
                             command == OnOffType.ON ? BondDeviceAction.StartDecreasingBrightness
                                     : BondDeviceAction.Stop,
                             null);
+                    updateState(CHANNEL_STOP, OnOffType.ON);
+                    // Unset in 30 seconds when this times out
+                    scheduler.schedule(() -> {
+                        logger.trace("Fan light brightness decrease start/stop command run for 30s");
+                        updateState(CHANNEL_STOP, OnOffType.OFF);
+                        updateState(CHANNEL_LIGHT_DIRECTIONAL_DECR, OnOffType.ON);
+                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_UP_LIGHT_ENABLE:
@@ -282,6 +307,13 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan up light dimmer change command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    updateState(CHANNEL_STOP, OnOffType.ON);
+                    // Unset in 30 seconds when this times out
+                    scheduler.schedule(() -> {
+                        logger.trace("Fan up light dimmer change command run for 30s");
+                        updateState(CHANNEL_STOP, OnOffType.OFF);
+                        updateState(CHANNEL_UP_LIGHT_START_STOP, OnOffType.ON);
+                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_UP_LIGHT_DIRECTIONAL_INC:
@@ -328,6 +360,13 @@ public class BondDeviceHandler extends BaseThingHandler {
                     logger.trace("Fan down light dimmer change command");
                     api.executeDeviceAction(config.deviceId,
                             command == OnOffType.ON ? BondDeviceAction.StartDimmer : BondDeviceAction.Stop, null);
+                    updateState(CHANNEL_STOP, OnOffType.ON);
+                    // Unset in 30 seconds when this times out
+                    scheduler.schedule(() -> {
+                        logger.trace("Fan down light dimmer change command run for 30s");
+                        updateState(CHANNEL_STOP, OnOffType.OFF);
+                        updateState(CHANNEL_DOWN_LIGHT_START_STOP, OnOffType.ON);
+                    }, 30, TimeUnit.SECONDS);
                     break;
 
                 case CHANNEL_DOWN_LIGHT_DIRECTIONAL_INC:
@@ -535,8 +574,8 @@ public class BondDeviceHandler extends BaseThingHandler {
 
         for (BondDeviceAction action : availableActions) {
             availableChannelIds.add(action.getChannelTypeId());
-            logger.trace("    Action: {},    Relevant Channel Type Id: {}",
-             action.getActionId(), action.getChannelTypeId());
+            logger.trace("    Action: {},    Relevant Channel Type Id: {}", action.getActionId(),
+                    action.getChannelTypeId());
         }
 
         for (Channel channel : possibleChannels) {
