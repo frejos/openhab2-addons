@@ -111,7 +111,7 @@ public class BondHttpApi {
      * @throws IOException
      */
     @Nullable
-    public synchronized BondDeviceState getDeviceState(String deviceId) throws IOException {
+    public BondDeviceState getDeviceState(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/state");
         logger.trace("BondHome device state : {}", json);
         return gson.fromJson(json, BondDeviceState.class);
@@ -125,7 +125,7 @@ public class BondHttpApi {
      * @throws IOException
      */
     @Nullable
-    public synchronized BondDeviceProperties getDeviceProperties(String deviceId) throws IOException {
+    public BondDeviceProperties getDeviceProperties(String deviceId) throws IOException {
         String json = request("/v2/devices/" + deviceId + "/properties");
         logger.trace("BondHome device properties : {}", json);
         return gson.fromJson(json, BondDeviceProperties.class);
@@ -165,7 +165,7 @@ public class BondHttpApi {
      *
      * @param uri: URI (e.g. "/settings")
      */
-    private String request(String uri) throws IOException {
+    private synchronized String request(String uri) throws IOException {
         String httpResponse = "ERROR";
         String url = "http://" + bridgeHandler.getBridgeIpAddress() + uri;
         try {

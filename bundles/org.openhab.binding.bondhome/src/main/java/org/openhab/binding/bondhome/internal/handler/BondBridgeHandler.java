@@ -125,6 +125,7 @@ public class BondBridgeHandler extends BaseBridgeHandler {
             Map<String, String> thingProperties = new HashMap<String, String>();
             thingProperties.put(PROPERTY_VENDOR, myVersion.make);
             thingProperties.put(PROPERTY_MODEL_ID, myVersion.model);
+            thingProperties.put(PROPERTY_SERIAL_NUMBER, myVersion.bondid);
             thingProperties.put(PROPERTY_FIRMWARE_VERSION, myVersion.firmwareVersion);
             updateProperties(thingProperties);
             updateStatus(ThingStatus.ONLINE);

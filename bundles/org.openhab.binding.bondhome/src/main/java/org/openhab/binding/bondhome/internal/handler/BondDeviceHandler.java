@@ -525,9 +525,11 @@ public class BondDeviceHandler extends BaseThingHandler {
         // Update all the thing properties based on the result
         Map<String, String> thingProperties = new HashMap<String, String>();
         thingProperties.put(PROPERTIES_BINDING_VERSION, CURRENT_BINDING_VERSION);
+        thingProperties.put(CONFIG_DEVICE_ID, config.deviceId);
         logger.trace("Updating device name to {}", devInfo.name);
         thingProperties.put(PROPERTIES_DEVICE_NAME, devInfo.name);
         logger.trace("Updating other device properties for {} ({})", config.deviceId, this.getThing().getLabel());
+        thingProperties.put(PROPERTIES_TEMPLATE_NAME, devInfo.template);
         thingProperties.put(PROPERTIES_MAX_SPEED, String.valueOf(devProperties.maxSpeed));
         thingProperties.put(PROPERTIES_TRUST_STATE, String.valueOf(devProperties.trustState));
         thingProperties.put(PROPERTIES_ADDRESS, String.valueOf(devProperties.addr));

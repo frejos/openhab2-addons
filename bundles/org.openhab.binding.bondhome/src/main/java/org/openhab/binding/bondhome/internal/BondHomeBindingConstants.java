@@ -30,7 +30,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class BondHomeBindingConstants {
 
     public static final String BINDING_ID = "bondhome";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.16";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.17";
 
     /**
      * List of all Thing Type UIDs.
@@ -118,6 +118,7 @@ public class BondHomeBindingConstants {
      * Device Properties
      */
     public static final String PROPERTIES_DEVICE_NAME = "deviceName";
+    public static final String PROPERTIES_TEMPLATE_NAME = "template";
     public static final String PROPERTIES_MAX_SPEED = "maxSpeed";
     public static final String PROPERTIES_TRUST_STATE = "trustState";
     public static final String PROPERTIES_ADDRESS = "addr";
