@@ -21,7 +21,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * This POJO represents update datagram sent bu the Bond Push UDP Protocol
+ * This POJO represents update datagram sent by the Bond Push UDP Protocol
  *
  * The incoming JSON looks like this:
  *

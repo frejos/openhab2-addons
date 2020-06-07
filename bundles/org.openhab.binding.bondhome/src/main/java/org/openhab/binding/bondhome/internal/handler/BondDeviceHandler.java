@@ -533,7 +533,7 @@ public class BondDeviceHandler extends BaseThingHandler {
         // Now we're online!
         updateStatus(ThingStatus.ONLINE);
         fullyInitialized = true;
-        logger.debug("Finished initializing!");
+        logger.debug("Finished initializing device!");
     }
 
     private void updateDevicePropertiesFromBond(BondDevice devInfo, BondDeviceProperties devProperties) {

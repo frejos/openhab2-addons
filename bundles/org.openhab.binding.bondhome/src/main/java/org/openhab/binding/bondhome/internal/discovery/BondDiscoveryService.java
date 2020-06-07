@@ -81,7 +81,7 @@ public class BondDiscoveryService extends AbstractDiscoveryService {
                 }
             }
         } catch (IOException ignored) {
-            logger.warn("Error getting devices for discovery!");
+            logger.warn("Error getting devices for discovery: {}", ignored.getMessage());
         } finally {
             removeOlderResults(getTimestampOfLastScan());
         }

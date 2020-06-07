@@ -145,7 +145,7 @@ public class BondHttpApi {
                 + action.getActionId();
         String payload = "{}";
         if (argument != null) {
-            payload = "{\"argument\":" + String.valueOf(argument) + "}";
+            payload = "{\"argument\":" + argument + "}";
         }
         InputStream content = new ByteArrayInputStream(payload.getBytes());
         try {

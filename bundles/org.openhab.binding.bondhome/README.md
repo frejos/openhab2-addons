@@ -1,11 +1,11 @@
 # Bond Home Binding
 
-This binding supports radio (RF 315-433MHz) and IR devices controlled by a (Bond Home Bridge)[https://bondhome.io/products/].
+This binding supports radio (RF 315-433MHz) and IR devices controlled by a [Bond Home Bridge](https://bondhome.io/products/).
 The Bond bridge and its associated app can control nearly any RF or IR device, but specializes in ceiling fans, fireplaces, and motorized shades.
 The Bridge works by recording the RF or IR signal from the factory remote and replaying the command when requested.
 Olibra, the makers of the Bond, also maintains a large database of common remotes meaning all commands from a particular remote can often be looked up after programming a single command.
 This binding does not attempt to replicate the ability to program new remotes or commands - that should be done using the Bond app.
-Instead, this binding mearly communicates with the Bridge in order to control the devices.
+Instead, this binding merely communicates with the Bridge in order to control the devices.
 
 Keep in mind when using this binding that all of the limitations of the Bond Bridge and of using typical state-less ceiling fan remotes still apply.
 That is - we have no way of being aware of any changes made using the physical device remote and toggle commands (like those for ceiling fan lights) may become out of sync with the real state of the light causing an "OFF" command to turn the light "ON" and vice-versa.
@@ -16,13 +16,13 @@ This binding was developed and tested primarily for remote controlled ceiling fa
 
 The available thing types are:
 
-| Device           | Serialized As | Thing Type       | Description |
-|------------------|---------------|------------------|-------------|
-| Bond Bridge      |               | bondBridge       | The RF/IR/Wifi Bridge |
+| Device           | Serialized As | Thing Type       | Description                                                          |
+|------------------|---------------|------------------|----------------------------------------------------------------------|
+| Bond Bridge      |               | bondBridge       | The RF/IR/Wifi Bridge                                                |
 | Ceiling Fan      | CF            | bondFan          | An RF or IR remote controlling a ceiling fan with or without a light |
-| Motorized Shades | MS            | bondShades       | An RF or IR remote controlled fireplace with or without a fan |
-| Fireplace        | FP            | bondFireplace    | An RF or IR remote controlled motorized shade |
-| Generic device   | GX            | bondGenericThing | A generic RF or IR remote controlled device |
+| Motorized Shades | MS            | bondShades       | An RF or IR remote controlled fireplace with or without a fan        |
+| Fireplace        | FP            | bondFireplace    | An RF or IR remote controlled motorized shade                        |
+| Generic device   | GX            | bondGenericThing | A generic RF or IR remote controlled device                          |
 
 ## Discovery
 
@@ -57,10 +57,10 @@ Bridge bondhome:bondBridge:myBridge "My Bond Bridge" @ "Living Room" [ bondId="Z
 
 To create any other device, only the bridge id and  device id is required.
 
-| Parameter ID                | Parameter Type | Mandatory | Description                              | Default |
-|-----------------------------|----------------|-----------|------------------------------------------|---------|
-| deviceId                    | text           | true      | The device id, viewable in the Bond app  |         |
-| lastDeviceConfigurationHash | text           | false     | The most recent device configuraton hash |         |
+| Parameter ID                | Parameter Type | Mandatory | Description                               | Default |
+|-----------------------------|----------------|-----------|-------------------------------------------|---------|
+| deviceId                    | text           | true      | The device id, viewable in the Bond app   |         |
+| lastDeviceConfigurationHash | text           | false     | The most recent device configuration hash |         |
 
 NOTE:  The device hash state value is only viewable via the Bond API.
 The value entered in the configuration for the hash is checked against the current value returned by the API.
@@ -92,45 +92,39 @@ Bridge bondhome:bondBridge:myBridge "My Bond Bridge"  @ "Living Room" [ bondId="
 Exactly which channels are available will depend on the commands available for that remote.
 During initialization, the binding queries the Bond bridge for possible commands and then deletes any channels that do not apply.
 
-| Channel Group      | Channel           | Type     | Description                                        | Appies to    |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
+| Channel Group      | Channel                  | Type     | Description                                        | Applies to   |
+|-------------------:|--------------------------|----------|:---------------------------------------------------|--------------|
 | commonChannels     | power                    | Switch   | Device power                                       | All devices  |
 | commonChannels     | lastUpdate               | DateTime | Timestamp of last status update                    | All devices  |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
 | ceilingFanChannels | fanSpeed                 | Dimmer   | Sets fan speed                                     | Ceiling Fans |
 | ceilingFanChannels | breezeState              | Dimmer   | Enables or disables breeze mode                    | Ceiling Fans |
 | ceilingFanChannels | breezeMean               | Number   | Sets the average speed in breeze mode              | Ceiling Fans |
 | ceilingFanChannels | breezeVariability        | Number   | Sets the variability of the speed in breeze mode   | Ceiling Fans |
 | ceilingFanChannels | direction                | Switch   | Sets the fan direction; forward or reverse         | Ceiling Fans |
 | ceilingFanChannels | timer                    | Number   | Starts a timer for s seconds                       | Ceiling Fans |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
 | lightChannels      | light                    | Switch   | Turns the light on the ceiling fan on or off       | Ceiling Fans |
 | lightChannels      | brightness               | Dimmer   | Adjusts the brightness of the fan light            | Ceiling Fans |
 | lightChannels      | dimmerStartStop          | Switch   | Starts changing the brightness of the fan light    | Ceiling Fans |
 | lightChannels      | dimmerIncr               | Switch   | Starts increasing the brightness of the fan light  | Ceiling Fans |
 | lightChannels      | dimmerDcr                | Switch   | Starts decreasing the brightness of the fan light  | Ceiling Fans |
 | lightChannels      | stop                     | Switch   | Stops changing brightness                          | Ceiling Fans |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
 | upLightChannels    | upLight                  | Switch   | Turns the up-light on a fan on or off              | Ceiling Fans |
 | upLightChannels    | upLightEnable            | Switch   | Enables or disables the up light\*                 | Ceiling Fans |
 | upLightChannels    | upLightBrightness        | Dimmer   | Adjusts the brightness of the up light             | Ceiling Fans |
 | upLightChannels    | upLightDimmerStartStop   | Switch   | Starts changing the brightness of the up light     | Ceiling Fans |
 | upLightChannels    | upLightDimmerIncr        | Switch   | Starts increasing the brightness of the up light   | Ceiling Fans |
 | upLightChannels    | upLightDimmerDcr         | Switch   | Starts decreasing the brightness of the up light   | Ceiling Fans |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
 | downLightChannels  | downLight                | Switch   | Turns the down-light on a fan on or off            | Ceiling Fans |
 | downLightChannels  | downLightEnable          | Switch   | Enables or disables the down light\*               | Ceiling Fans |
 | downLightChannels  | downLightBrightness      | Dimmer   | Adjusts the brightness of the down light           | Ceiling Fans |
 | downLightChannels  | downLightDimmerStartStop | Switch   | Starts changing the brightness of the down light   | Ceiling Fans |
 | downLightChannels  | downLightDimmerIncr      | Switch   | Starts increasing the brightness of the down light | Ceiling Fans |
 | downLightChannels  | downLightDimmerDcr       | Switch   | Starts decreasing the brightness of the down light | Ceiling Fans |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
 | downLightChannels  | flame                    | Dimmer   | Turns on or adjust the flame level                 | Fireplaces   |
 | downLightChannels  | fpFanPower               | Switch   | Turns the fireplace fan on or off                  | Fireplaces   |
 | downLightChannels  | fpFanSpeed               | Dimmer   | Adjusts the speed of the fireplace fan             | Fireplaces   |
-|--------------------|--------------------------|----------|----------------------------------------------------|--------------|
-| shadeChannels      | openShade                | Switch   | Opens or closes motorize shades            | Motor Shades |
-| shadeChannels      | hold                     | Switch   | Tells a device to stop moving               | Motor Shades   |
+| shadeChannels      | openShade                | Switch   | Opens or closes motorize shades                    | Motor Shades |
+| shadeChannels      | hold                     | Switch   | Tells a device to stop moving                      | Motor Shades |
 
 \* If the fan up or down light is "enabled" it will turn on when the "light" channel is turned on.
 
