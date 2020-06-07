@@ -250,7 +250,7 @@
 	<channel-type id="stopChannelType" advanced="false">
 		<item-type>Switch</item-type>
 		<label>Stop</label>
-		<description>Stops any ongong change actions</description>
+		<description>Stops any ongoing change actions</description>
 		<category>Switch</category>
 		<tags>
 			<tag>Switchable</tag>

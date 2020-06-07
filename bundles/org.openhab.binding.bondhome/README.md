@@ -98,8 +98,6 @@ During initialization, the binding queries the Bond bridge for possible commands
 | commonChannels     | lastUpdate               | DateTime | Timestamp of last status update                    | All devices  |
 | ceilingFanChannels | fanSpeed                 | Dimmer   | Sets fan speed                                     | Ceiling Fans |
 | ceilingFanChannels | breezeState              | Dimmer   | Enables or disables breeze mode                    | Ceiling Fans |
-| ceilingFanChannels | breezeMean               | Number   | Sets the average speed in breeze mode              | Ceiling Fans |
-| ceilingFanChannels | breezeVariability        | Number   | Sets the variability of the speed in breeze mode   | Ceiling Fans |
 | ceilingFanChannels | direction                | Switch   | Sets the fan direction; forward or reverse         | Ceiling Fans |
 | ceilingFanChannels | timer                    | Number   | Starts a timer for s seconds                       | Ceiling Fans |
 | lightChannels      | light                    | Switch   | Turns the light on the ceiling fan on or off       | Ceiling Fans |
@@ -112,14 +110,10 @@ During initialization, the binding queries the Bond bridge for possible commands
 | upLightChannels    | upLightEnable            | Switch   | Enables or disables the up light\*                 | Ceiling Fans |
 | upLightChannels    | upLightBrightness        | Dimmer   | Adjusts the brightness of the up light             | Ceiling Fans |
 | upLightChannels    | upLightDimmerStartStop   | Switch   | Starts changing the brightness of the up light     | Ceiling Fans |
-| upLightChannels    | upLightDimmerIncr        | Switch   | Starts increasing the brightness of the up light   | Ceiling Fans |
-| upLightChannels    | upLightDimmerDcr         | Switch   | Starts decreasing the brightness of the up light   | Ceiling Fans |
 | downLightChannels  | downLight                | Switch   | Turns the down-light on a fan on or off            | Ceiling Fans |
 | downLightChannels  | downLightEnable          | Switch   | Enables or disables the down light\*               | Ceiling Fans |
 | downLightChannels  | downLightBrightness      | Dimmer   | Adjusts the brightness of the down light           | Ceiling Fans |
 | downLightChannels  | downLightDimmerStartStop | Switch   | Starts changing the brightness of the down light   | Ceiling Fans |
-| downLightChannels  | downLightDimmerIncr      | Switch   | Starts increasing the brightness of the down light | Ceiling Fans |
-| downLightChannels  | downLightDimmerDcr       | Switch   | Starts decreasing the brightness of the down light | Ceiling Fans |
 | downLightChannels  | flame                    | Dimmer   | Turns on or adjust the flame level                 | Fireplaces   |
 | downLightChannels  | fpFanPower               | Switch   | Turns the fireplace fan on or off                  | Fireplaces   |
 | downLightChannels  | fpFanSpeed               | Dimmer   | Adjusts the speed of the fireplace fan             | Fireplaces   |
@@ -129,3 +123,14 @@ During initialization, the binding queries the Bond bridge for possible commands
 \* If the fan up or down light is "enabled" it will turn on when the "light" channel is turned on.
 
 Note:  For fan lights, the brightness cannot generally be set to a given level, only changed from the current level.
+
+These additional fan channels exist, but no actions will work on them.
+
+| Channel Group      | Channel                  | Type     | Description                                        | Applies to   |
+|-------------------:|--------------------------|----------|:---------------------------------------------------|--------------|
+| ceilingFanChannels | breezeMean               | Number   | Sets the average speed in breeze mode              | Ceiling Fans |
+| ceilingFanChannels | breezeVariability        | Number   | Sets the variability of the speed in breeze mode   | Ceiling Fans |
+| upLightChannels    | upLightDimmerIncr        | Switch   | Starts increasing the brightness of the up light   | Ceiling Fans |
+| upLightChannels    | upLightDimmerDcr         | Switch   | Starts decreasing the brightness of the up light   | Ceiling Fans |
+| downLightChannels  | downLightDimmerIncr      | Switch   | Starts increasing the brightness of the down light | Ceiling Fans |
+| downLightChannels  | downLightDimmerDcr       | Switch   | Starts decreasing the brightness of the down light | Ceiling Fans |

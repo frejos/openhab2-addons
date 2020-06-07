@@ -289,11 +289,10 @@ public class BondDeviceHandler extends BaseThingHandler {
 
                 case CHANNEL_UP_LIGHT_STATE:
                     // To turn on the up light, we first have to enable it and then turn on the lights
+                    api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnUpLightOn, null);
                     if (command == OnOffType.ON) {
-                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnUpLightOn, null);
                         api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOn, null);
                     } else {
-                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnUpLightOn, null);
                         api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOff, null);
                     }
                     break;
@@ -342,11 +341,10 @@ public class BondDeviceHandler extends BaseThingHandler {
 
                 case CHANNEL_DOWN_LIGHT_STATE:
                     // To turn on the down light, we first have to enable it and then turn on the lights
+                    api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnDownLightOn, null);
                     if (command == OnOffType.ON) {
-                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnDownLightOn, null);
                         api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOn, null);
                     } else {
-                        api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnDownLightOn, null);
                         api.executeDeviceAction(config.deviceId, BondDeviceAction.TurnLightOff, null);
                     }
                     break;
