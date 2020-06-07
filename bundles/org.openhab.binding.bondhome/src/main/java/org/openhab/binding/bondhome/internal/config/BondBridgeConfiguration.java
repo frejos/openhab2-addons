@@ -40,5 +40,4 @@ public class BondBridgeConfiguration {
     public void setIpAddress(String bondIpAddress) {
         this.bondIpAddress = bondIpAddress;
     }
-
 }

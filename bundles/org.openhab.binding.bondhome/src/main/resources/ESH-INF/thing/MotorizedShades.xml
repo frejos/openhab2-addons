@@ -7,20 +7,20 @@
 	<!-- A Motorized Shade Thing -->
 	<thing-type id="bondShades">
 		<supported-bridge-type-refs>
-			<bridge-type-ref id="bondBridge" />
+			<bridge-type-ref id="bondBridge"/>
 		</supported-bridge-type-refs>
 
 		<label>Bond Home Motorized Shades</label>
 		<description>An RF or IR remote controlled motorized shade</description>
 
 		<channel-groups>
-			<channel-group id="commonChannels" typeId="commonChannelGroup" />
-			<channel-group id="shadeChannels" typeId="shadeChannelGroup" />
+			<channel-group id="commonChannels" typeId="commonChannelGroup"/>
+			<channel-group id="shadeChannels" typeId="shadeChannelGroup"/>
 		</channel-groups>
 
 		<representation-property>deviceId</representation-property>
 
-		<config-description-ref uri="thing-type:bondhome:bonddevice" />
+		<config-description-ref uri="thing-type:bondhome:bonddevice"/>
 
 	</thing-type>
 

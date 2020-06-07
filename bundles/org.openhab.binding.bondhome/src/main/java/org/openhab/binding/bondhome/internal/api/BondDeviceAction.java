@@ -258,5 +258,4 @@ public enum BondDeviceAction {
     public String getChannelTypeId() {
         return channelTypeId;
     }
-
 }

@@ -593,10 +593,11 @@ public class BondDeviceHandler extends BaseThingHandler {
         availableChannelIds.add(CHANNEL_LAST_UPDATE);
 
         for (BondDeviceAction action : availableActions) {
-            if (action != null){
-            availableChannelIds.add(action.getChannelTypeId());
-            logger.trace("    Action: {},    Relevant Channel Type Id: {}", action.getActionId(),
-                    action.getChannelTypeId());}
+            if (action != null) {
+                availableChannelIds.add(action.getChannelTypeId());
+                logger.trace("    Action: {},    Relevant Channel Type Id: {}", action.getActionId(),
+                        action.getChannelTypeId());
+            }
         }
 
         for (Channel channel : possibleChannels) {

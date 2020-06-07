@@ -268,5 +268,4 @@ public class BondBridgeHandler extends BaseBridgeHandler {
     public BondHttpApi getBridgeAPI() {
         return this.api;
     }
-
 }

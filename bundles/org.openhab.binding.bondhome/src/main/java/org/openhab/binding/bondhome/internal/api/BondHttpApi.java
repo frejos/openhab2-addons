@@ -197,11 +197,13 @@ public class BondHttpApi {
                 logger.debug("HTTP response from request to {}: {}", uri, httpResponse);
                 return httpResponse;
             } catch (IOException e) {
-                if (e.getCause() != null){
+                if (e.getCause() != null) {
                     logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
-                            numRetriesRemaining, e.getCause().getMessage());}
-                else {logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
-                            numRetriesRemaining, e);}
+                            numRetriesRemaining, e.getCause().getMessage());
+                } else {
+                    logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
+                            numRetriesRemaining, e.getMessage());
+                }
                 numRetriesRemaining--;
                 if (numRetriesRemaining == 0) {
                     // TODO(SRGDamia1): Do I want to process the exceptions differently?
