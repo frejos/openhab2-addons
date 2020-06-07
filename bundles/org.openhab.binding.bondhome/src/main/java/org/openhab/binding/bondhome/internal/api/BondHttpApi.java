@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import javax.ws.rs.HttpMethod;
 
@@ -168,37 +170,54 @@ public class BondHttpApi {
     private synchronized String request(String uri) throws IOException {
         String httpResponse = "ERROR";
         String url = "http://" + bridgeHandler.getBridgeIpAddress() + uri;
-        try {
-            logger.debug("HTTP GET to {}", url);
+        int numRetriesRemaining = 3;
+        do {
+            try {
+                logger.debug("HTTP GET to {}", url);
 
-            Properties headers = new Properties();
-            headers.put("BOND-Token", bridgeHandler.getBridgeToken());
+                final Properties headers = new Properties();
+                headers.put("BOND-Token", bridgeHandler.getBridgeToken());
 
-            httpResponse = HttpUtil.executeUrl(HttpMethod.GET, url, headers, null, "", BOND_API_TIMEOUT_MS);
-            Validate.notNull(httpResponse, "httpResponse must not be null");
-            // all api responses are returning the result in Json format. If we are getting
-            // something else it must
-            // be an error message, e.g. http result code
-            if (httpResponse.contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
-                throw new IOException(
-                        API_ERR_HTTP_401_UNAUTHORIZED + ", set/correct local token in the thing/binding config");
-            }
-            if (httpResponse.contains(API_ERR_HTTP_404_NOTFOUND)) {
-                throw new IOException(
-                        API_ERR_HTTP_404_NOTFOUND + ", set/correct device ID in the thing/binding config");
-            }
-            if (!httpResponse.startsWith("{") && !httpResponse.startsWith("[")) {
-                throw new IOException("Unexpected http response: " + httpResponse);
-            }
+                httpResponse = HttpUtil.executeUrl(HttpMethod.GET, url, headers, null, "", BOND_API_TIMEOUT_MS);
+                Validate.notNull(httpResponse, "httpResponse must not be null");
+                // all api responses return Json. If we get something else it must
+                // be an error message, e.g. http result code
+                if (httpResponse.contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
+                    throw new IOException(
+                            API_ERR_HTTP_401_UNAUTHORIZED + ", set/correct local token in the thing/binding config");
+                }
+                if (httpResponse.contains(API_ERR_HTTP_404_NOTFOUND)) {
+                    throw new IOException(
+                            API_ERR_HTTP_404_NOTFOUND + ", set/correct device ID in the thing/binding config");
+                }
+                if (!httpResponse.startsWith("{") && !httpResponse.startsWith("[")) {
+                    throw new IOException("Unexpected http response: " + httpResponse);
+                }
 
-            logger.debug("HTTP response from request to {}: {}", uri, httpResponse);
-            return httpResponse;
-        } catch (IOException e) {
-            if (e.getMessage().contains("Timeout")) {
-                throw new IOException("Bond API call to " + uri + " failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
-            } else {
-                throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
+                logger.debug("HTTP response from request to {}: {}", uri, httpResponse);
+                return httpResponse;
+            } catch (IOException e) {
+                if (e.getCause() != null){
+                    logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
+                            numRetriesRemaining, e.getCause().getMessage());}
+                else {logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
+                            numRetriesRemaining, e);}
+                numRetriesRemaining--;
+                if (numRetriesRemaining == 0) {
+                    // TODO(SRGDamia1): Do I want to process the exceptions differently?
+                    if (e.getCause() instanceof TimeoutException) {
+                        throw new IOException(
+                                "Bond API call to " + uri + " failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
+                    } else if (e.getCause() instanceof InterruptedException) {
+                        throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
+                    } else if (e.getCause() instanceof ExecutionException) {
+                        throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
+                    } else {
+                        throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
+                    }
+                }
             }
-        }
+        } while (numRetriesRemaining > 0);
+        return "";
     }
 }

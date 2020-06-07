@@ -110,7 +110,12 @@ public class BondDeviceHandler extends BaseThingHandler {
                 channelUID);
         BondHttpApi api = this.api;
         if (api == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Bridge API not available");
+            // Re-attempt initialization
+            scheduler.schedule(() -> {
+                logger.trace("Re-attempting initialization");
+                initialize();
+            }, 30, TimeUnit.SECONDS);
             return;
         } else {
             if (command instanceof RefreshType) {
@@ -122,7 +127,15 @@ public class BondDeviceHandler extends BaseThingHandler {
                         deviceState = api.getDeviceState(config.deviceId);
                         updateChannelsFromState(deviceState);
                     } catch (IOException e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "Incorrect local token for Bond Bridge.");
+                        } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "No Bond device found with the given device id.");
+                        } else {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        }
                     }
                 } else {
                     logger.trace("It has been less than 15s since the last update.  Please retry soon.");
@@ -466,7 +479,7 @@ public class BondDeviceHandler extends BaseThingHandler {
     private void initializeThing() {
         BondHttpApi api = this.api;
         if (api == null) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Bridge API not available");
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Bridge API not available");
             return;
         }
 
@@ -476,8 +489,15 @@ public class BondDeviceHandler extends BaseThingHandler {
             logger.trace("Getting device properties for {} ({})", config.deviceId, this.getThing().getLabel());
             deviceProperties = api.getDeviceProperties(config.deviceId);
         } catch (IOException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-            return;
+            if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "Incorrect local token for Bond Bridge.");
+            } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                        "No Bond device found with the given device id.");
+            } else {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            }
         }
 
         BondDevice devInfo = this.deviceInfo;
@@ -575,9 +595,10 @@ public class BondDeviceHandler extends BaseThingHandler {
         availableChannelIds.add(CHANNEL_LAST_UPDATE);
 
         for (BondDeviceAction action : availableActions) {
+            if (action != null){
             availableChannelIds.add(action.getChannelTypeId());
             logger.trace("    Action: {},    Relevant Channel Type Id: {}", action.getActionId(),
-                    action.getChannelTypeId());
+                    action.getChannelTypeId());}
         }
 
         for (Channel channel : possibleChannels) {
@@ -735,8 +756,9 @@ public class BondDeviceHandler extends BaseThingHandler {
             Runnable pollingCommand = () -> {
                 BondHttpApi api = this.api;
                 if (api == null) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                             "Bridge API not available");
+                    initialize();
                     return;
                 } else {
                     logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
@@ -744,7 +766,15 @@ public class BondDeviceHandler extends BaseThingHandler {
                         deviceState = api.getDeviceState(config.deviceId);
                         updateChannelsFromState(deviceState);
                     } catch (IOException e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "Incorrect local token for Bond Bridge.");
+                        } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "No Bond device found with the given device id.");
+                        } else {
+                            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        }
                     }
                 }
             };
