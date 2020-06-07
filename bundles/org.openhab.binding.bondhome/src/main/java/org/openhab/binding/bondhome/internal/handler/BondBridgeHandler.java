@@ -85,7 +85,19 @@ public class BondBridgeHandler extends BaseBridgeHandler {
     @Override
     public void initialize() {
         logger.debug("Start initializing the Bond bridge!");
+        config = getConfigAs(BondBridgeConfiguration.class);
+
+        // set the thing status to UNKNOWN temporarily
         updateStatus(ThingStatus.UNKNOWN);
+
+        // Example for background initialization:
+        scheduler.execute(() -> {
+            initializeThing();
+        });
+    }
+
+    private void initializeThing() {
+
         config = getConfigAs(BondBridgeConfiguration.class);
         if (config != null) {
             if (config.bondIpAddress == null) {
@@ -108,7 +120,7 @@ public class BondBridgeHandler extends BaseBridgeHandler {
                     InetAddress.getByName(config.bondIpAddress);
                 } catch (UnknownHostException ignored) {
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                            "IP Address for Bond Bridge is not valid");
+                            "IP Address or host name for Bond Bridge is not valid");
                 }
             }
         }
@@ -133,6 +145,10 @@ public class BondBridgeHandler extends BaseBridgeHandler {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                     "Unable get Bond bridge version via API");
         }
+
+        // Now we're online!
+        updateStatus(ThingStatus.ONLINE);
+        logger.debug("Finished initializing Bond bridge!");
     }
 
     @Override
