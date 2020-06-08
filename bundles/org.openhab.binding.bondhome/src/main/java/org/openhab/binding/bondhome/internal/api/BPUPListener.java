@@ -14,6 +14,8 @@ package org.openhab.binding.bondhome.internal.api;
 
 import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
+import static java.nio.charset.StandardCharsets.*;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -202,7 +204,7 @@ public class BPUPListener extends Thread {
      * @return the {@link BPUPUpdate}
      */
     public @Nullable BPUPUpdate transformUpdatePacket(final DatagramPacket packet) {
-        String responseJson = new String(packet.getData(), 0, packet.getLength());
+        String responseJson = new String(packet.getData(), 0, packet.getLength(), UTF_8);
         logger.debug("Message from {}:{} -> {}", packet.getAddress().getHostAddress(), packet.getPort(), responseJson);
 
         @Nullable
