@@ -40,7 +40,7 @@ import com.google.gson.JsonParseException;
  *
  */
 @NonNullByDefault
-public class BPUPListener extends Thread {
+public class BPUPListener implements Runnable {
 
     private static final int SOCKET_TIMEOUT_MILLISECONDS = 3000; // in milliseconds
 
