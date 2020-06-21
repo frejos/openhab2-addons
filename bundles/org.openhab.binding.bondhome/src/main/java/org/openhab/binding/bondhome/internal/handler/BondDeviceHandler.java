@@ -130,6 +130,8 @@ public class BondDeviceHandler extends BaseThingHandler {
                         if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                                     "Incorrect local token for Bond Bridge.");
+                            setBridgeOffline(ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "Incorrect local token for Bond Bridge.");
                         } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                                     "No Bond device found with the given device id.");
@@ -452,12 +454,12 @@ public class BondDeviceHandler extends BaseThingHandler {
         // set the thing status to UNKNOWN temporarily
         updateStatus(ThingStatus.UNKNOWN);
 
-        // Example for background initialization:
-        scheduler.execute(() -> {
+        // Schedule initialization for a bit in the future to make sure the bridge finishes first
+        scheduler.schedule((() -> {
             if (getBridgeAndAPI()) {
                 initializeThing();
             }
-        });
+        }), 15, TimeUnit.SECONDS);
     }
 
     @Override
@@ -490,6 +492,7 @@ public class BondDeviceHandler extends BaseThingHandler {
             if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                         "Incorrect local token for Bond Bridge.");
+                setBridgeOffline(ThingStatusDetail.CONFIGURATION_ERROR, "Incorrect local token for Bond Bridge.");
             } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                         "No Bond device found with the given device id.");
@@ -748,6 +751,22 @@ public class BondDeviceHandler extends BaseThingHandler {
         }
     }
 
+    private void setBridgeOffline(ThingStatusDetail detail, String description) {
+        Bridge myBridge = this.getBridge();
+        if (myBridge == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                    "No Bond bridge is associated with this Bond device");
+            logger.error("No Bond bridge is associated with this Bond device - cannot create device!");
+            return;
+        } else {
+            BondBridgeHandler myBridgeHandler = (BondBridgeHandler) myBridge.getHandler();
+            if (myBridgeHandler != null) {
+                myBridgeHandler.setBridgeOffline(detail, description);
+                return;
+            }
+        }
+    }
+
     // Start polling for state
     private synchronized void startPollingJob() {
         final ScheduledFuture<?> pollingJob = this.pollingJob;
@@ -767,6 +786,8 @@ public class BondDeviceHandler extends BaseThingHandler {
                     } catch (IOException e) {
                         if (e.getMessage().contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
+                                    "Incorrect local token for Bond Bridge.");
+                            setBridgeOffline(ThingStatusDetail.CONFIGURATION_ERROR,
                                     "Incorrect local token for Bond Bridge.");
                         } else if (e.getMessage().contains(API_ERR_HTTP_404_NOTFOUND)) {
                             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,

@@ -12,9 +12,8 @@
  */
 package org.openhab.binding.bondhome.internal.api;
 
-import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
-
 import static java.nio.charset.StandardCharsets.*;
+import static org.openhab.binding.bondhome.internal.BondHomeBindingConstants.*;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -25,6 +24,7 @@ import java.net.SocketTimeoutException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.bondhome.internal.handler.BondBridgeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +59,8 @@ public class BPUPListener implements Runnable {
     private long timeOfLastKeepAlivePacket;
     private Boolean shutdown;
 
+    private int numberOfKeepAliveTimeouts;
+
     /**
      * Constructor of the receiver runnable thread.
      *
@@ -70,6 +72,7 @@ public class BPUPListener implements Runnable {
 
         this.bridgeHandler = bridgeHandler;
         this.timeOfLastKeepAlivePacket = -1;
+        this.numberOfKeepAliveTimeouts = 0;
 
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.excludeFieldsWithoutExposeAnnotation();
@@ -119,10 +122,20 @@ public class BPUPListener implements Runnable {
                     if (!response.bondId.equalsIgnoreCase(bridgeHandler.getBridgeId())) {
                         logger.warn("Reponse isn't from expected Bridge!  Expected: {}  Got: {}",
                                 bridgeHandler.getBridgeId(), response.bondId);
+                    } else {
+                        bridgeHandler.setBridgeOnline();
+                        numberOfKeepAliveTimeouts = 0;
                     }
                 }
             } catch (SocketTimeoutException e) {
-                logger.trace("BPUP Socket timeout");
+                numberOfKeepAliveTimeouts++;
+                logger.trace("BPUP Socket timeout, number of timeouts: {}", numberOfKeepAliveTimeouts);
+                if (numberOfKeepAliveTimeouts > 10) {
+                    logger.warn(
+                            "Repeated timeouts in response to Bond Push UDP Protocol; bridge appears to be offline.");
+                    bridgeHandler.setBridgeOffline(ThingStatusDetail.COMMUNICATION_ERROR,
+                            "Repeated timeouts attempting to reach bridge.");
+                }
             } catch (IOException e) {
                 logger.debug("One exception has occurred: {} ", e.getMessage());
             }

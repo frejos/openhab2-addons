@@ -30,6 +30,7 @@ import javax.ws.rs.HttpMethod;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.io.net.http.HttpUtil;
 import org.openhab.binding.bondhome.internal.handler.BondBridgeHandler;
 import org.slf4j.Logger;
@@ -180,16 +181,21 @@ public class BondHttpApi {
 
                 httpResponse = HttpUtil.executeUrl(HttpMethod.GET, url, headers, null, "", BOND_API_TIMEOUT_MS);
                 Validate.notNull(httpResponse, "httpResponse must not be null");
-                // all api responses return Json. If we get something else it must
-                // be an error message, e.g. http result code
+                // handle known errors
                 if (httpResponse.contains(API_ERR_HTTP_401_UNAUTHORIZED)) {
-                    throw new IOException(
-                            API_ERR_HTTP_401_UNAUTHORIZED + ", set/correct local token in the thing/binding config");
+                    // Don't retry or throw an exception if we get unauthorized, just set the bridge offline
+                    numRetriesRemaining = 0;
+                    bridgeHandler.setBridgeOffline(ThingStatusDetail.CONFIGURATION_ERROR,
+                            "Incorrect local token for Bond Bridge.");
                 }
                 if (httpResponse.contains(API_ERR_HTTP_404_NOTFOUND)) {
+                    // Don't retry if the device wasn't found by the bridge.
+                    numRetriesRemaining = 0;
                     throw new IOException(
                             API_ERR_HTTP_404_NOTFOUND + ", set/correct device ID in the thing/binding config");
                 }
+                // all api responses return Json. If we get something else it must
+                // be an error message, e.g. http result code
                 if (!httpResponse.startsWith("{") && !httpResponse.startsWith("[")) {
                     throw new IOException("Unexpected http response: " + httpResponse);
                 }
@@ -198,18 +204,19 @@ public class BondHttpApi {
                 return httpResponse;
             } catch (IOException e) {
                 if (e.getCause() != null) {
-                    logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
+                    logger.info("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
                             numRetriesRemaining, e.getCause().getMessage());
                 } else {
-                    logger.warn("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
+                    logger.info("Last request to Bond Bridge failed; {} retries remaining. Failure cause: {}",
                             numRetriesRemaining, e.getMessage());
                 }
                 numRetriesRemaining--;
                 if (numRetriesRemaining == 0) {
-                    // TODO(SRGDamia1): Do I want to process the exceptions differently?
+                    // TODO(SRGDamia1): Do I want to process more of the exceptions differently?
                     if (e.getCause() instanceof TimeoutException) {
-                        throw new IOException(
-                                "Bond API call to " + uri + " failed: Timeout (" + BOND_API_TIMEOUT_MS + " ms)");
+                        logger.warn("Repeated Bond API calls to {} timed out.", uri);
+                        bridgeHandler.setBridgeOffline(ThingStatusDetail.COMMUNICATION_ERROR,
+                                "Repeated timeouts attempting to reach bridge.");
                     } else if (e.getCause() instanceof InterruptedException) {
                         throw new IOException("Bond API call to " + uri + " failed: " + e.getMessage());
                     } else if (e.getCause() instanceof ExecutionException) {

@@ -97,7 +97,6 @@ public class BondBridgeHandler extends BaseBridgeHandler {
     }
 
     private void initializeThing() {
-
         config = getConfigAs(BondBridgeConfiguration.class);
         if (config != null) {
             if (config.bondIpAddress == null) {
@@ -267,5 +266,27 @@ public class BondBridgeHandler extends BaseBridgeHandler {
      */
     public BondHttpApi getBridgeAPI() {
         return this.api;
+    }
+
+    /**
+     * Set the bridge status offline.
+     *
+     * Called by the dependents to set the bridge offline when repeated requests fail.
+     *
+     * NOTE: This does NOT stop the UDP listener job, which will keep pinging the
+     * bridge's IP once a minute. The listener job will set the bridge back online
+     * if it receives a proper response from the bridge.
+     */
+    public void setBridgeOffline(ThingStatusDetail detail, String description) {
+        updateStatus(ThingStatus.OFFLINE, detail, description);
+    }
+
+    /**
+     * Set the bridge status back online.
+     *
+     * Called by the UDP listener when it gets a proper response.
+     */
+    public void setBridgeOnline() {
+        updateStatus(ThingStatus.ONLINE);
     }
 }

@@ -59,6 +59,10 @@ public class BondHomeHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (THING_TYPE_BOND_BRIDGE.equals(thingTypeUID)) {
+            logger.info(
+                    "\n\n*************************************************\nBond Home, binding version: {}\n*************************************************\n",
+                    CURRENT_BINDING_VERSION);
+
             logger.trace("Creating handler for Bond bridge with type UID {}", thingTypeUID);
             final BondBridgeHandler handler = new BondBridgeHandler((Bridge) thing);
             registerDeviceDiscoveryService(handler);
