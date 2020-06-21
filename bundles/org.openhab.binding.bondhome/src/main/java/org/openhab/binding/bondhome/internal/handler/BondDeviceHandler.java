@@ -801,4 +801,22 @@ public class BondDeviceHandler extends BaseThingHandler {
             this.pollingJob = scheduler.scheduleWithFixedDelay(pollingCommand, 60, 300, TimeUnit.SECONDS);
         }
     }
+
+    @Override
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        if (bridgeStatusInfo.getStatus() == ThingStatus.ONLINE
+                && getThing().getStatusInfo().getStatusDetail() == ThingStatusDetail.BRIDGE_OFFLINE) {
+            updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+            // restart the polling job when the bridge goes back online
+            startPollingJob();
+        } else if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
+            // stop the polling job when the bridge goes offline
+            ScheduledFuture<?> pollingJob = this.pollingJob;
+            if (pollingJob != null) {
+                pollingJob.cancel(true);
+                this.pollingJob = null;
+            }
+        }
+    }
 }
