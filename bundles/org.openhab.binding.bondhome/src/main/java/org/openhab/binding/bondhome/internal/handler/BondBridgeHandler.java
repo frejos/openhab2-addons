@@ -124,29 +124,12 @@ public class BondBridgeHandler extends BaseBridgeHandler {
             }
         }
 
-        BondSysVersion myVersion = null;
-        try {
-            myVersion = api.getBridgeVersion();
-        } catch (IOException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                    "Unable to access Bond local API through bridge");
-        }
-        if (myVersion != null) {
-            // Update all the thing properties based on the result
-            Map<String, String> thingProperties = new HashMap<String, String>();
-            thingProperties.put(PROPERTY_VENDOR, myVersion.make);
-            thingProperties.put(PROPERTY_MODEL_ID, myVersion.model);
-            thingProperties.put(PROPERTY_SERIAL_NUMBER, myVersion.bondid);
-            thingProperties.put(PROPERTY_FIRMWARE_VERSION, myVersion.firmwareVersion);
-            updateProperties(thingProperties);
-            updateStatus(ThingStatus.ONLINE);
-        } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                    "Unable get Bond bridge version via API");
-        }
+        // Ask the bridge it's current status and update the properties with the info
+        // This will also set the thing status to online/offline based on whether it
+        // succeeds in getting the properties from the bridge.
+        updateBridgeProperties();
 
-        // Now we're online!
-        updateStatus(ThingStatus.ONLINE);
+        // Finish
         logger.debug("Finished initializing Bond bridge!");
     }
 
@@ -288,5 +271,29 @@ public class BondBridgeHandler extends BaseBridgeHandler {
      */
     public void setBridgeOnline() {
         updateStatus(ThingStatus.ONLINE);
+        updateBridgeProperties();
+    }
+
+    private void updateBridgeProperties() {
+        BondSysVersion myVersion = null;
+        try {
+            myVersion = api.getBridgeVersion();
+        } catch (IOException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    "Unable to access Bond local API through bridge");
+        }
+        if (myVersion != null) {
+            // Update all the thing properties based on the result
+            Map<String, String> thingProperties = new HashMap<String, String>();
+            thingProperties.put(PROPERTY_VENDOR, myVersion.make);
+            thingProperties.put(PROPERTY_MODEL_ID, myVersion.model);
+            thingProperties.put(PROPERTY_SERIAL_NUMBER, myVersion.bondid);
+            thingProperties.put(PROPERTY_FIRMWARE_VERSION, myVersion.firmwareVersion);
+            updateProperties(thingProperties);
+            updateStatus(ThingStatus.ONLINE);
+        } else {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    "Unable get Bond bridge version via API");
+        }
     }
 }

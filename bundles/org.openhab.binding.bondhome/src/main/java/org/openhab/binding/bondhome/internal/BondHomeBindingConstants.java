@@ -30,7 +30,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class BondHomeBindingConstants {
 
     public static final String BINDING_ID = "bondhome";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.24";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.25";
 
     /**
      * List of all Thing Type UIDs.
