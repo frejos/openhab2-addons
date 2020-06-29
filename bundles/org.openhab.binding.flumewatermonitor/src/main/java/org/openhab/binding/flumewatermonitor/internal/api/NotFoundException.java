@@ -12,11 +12,22 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
- * The {@link FlumeDataObject} represents the "data" portion of an API response
+ * The {@link NotFoundException} is thrown whenever account authorization
+ * fails.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public interface FlumeDataObject {
+public class NotFoundException extends Exception {
+    private static final long serialVersionUID = 7526994803548490522L;
+
+    public NotFoundException() {
+    }
+
+    public NotFoundException(String message) {
+        super(message);
+    }
 }

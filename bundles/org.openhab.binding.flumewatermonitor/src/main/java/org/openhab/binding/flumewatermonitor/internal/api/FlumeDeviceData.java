@@ -16,6 +16,7 @@ import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBi
 
 import java.util.Date;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
@@ -28,7 +29,7 @@ import com.google.gson.annotations.SerializedName;
  */
 
 @NonNullByDefault
-public class FlumeDeviceData implements FlumeDataObject {
+public class FlumeDeviceData {
 
     /**
      * The type of token - should always be "bearer".
@@ -40,7 +41,7 @@ public class FlumeDeviceData implements FlumeDataObject {
      * The email address associated with the user
      */
     @SerializedName("type")
-    public FlumeDeviceType deviceType;
+    public FlumeDeviceType deviceType = FlumeDeviceType.FlumeSensor;
 
     /**
      * The numeric location id
@@ -72,7 +73,7 @@ public class FlumeDeviceData implements FlumeDataObject {
      * The last time the Flume cloud "saw" a device.
      */
     @SerializedName("last_seen")
-    public Date lastSeen;
+    public Date lastSeen = new Date();
 
     /**
      * A boolean indicating that a device is properly connected to the Flume cloud.

@@ -12,8 +12,12 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
+import java.io.IOException;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -24,6 +28,8 @@ import com.google.gson.annotations.SerializedName;
  */
 @NonNullByDefault
 public class FlumeResponseDTO<T> {
+
+    private final Logger logger = LoggerFactory.getLogger(FlumeResponseDTO.class);
 
     /**
      * The success field returns whether the operation was successful or not.
@@ -44,9 +50,33 @@ public class FlumeResponseDTO<T> {
      * - 404 Not Found - Request/Resource not found.
      * - 409 Conflict -- Returned when trying to add something that already exists
      * - 500 Internal Server Error - Issue detected on the server.
+     * - 503 Service Unavailable - JWT is invalid or malformed.
      */
     @SerializedName("code")
     public int httpResponseCode = 400;
+
+    /**
+     * Check if the request was successful and throw exceptions otherwise
+     *
+     * @throws AuthorizationException
+     * @throws IOException
+     * @throws NotFoundException
+     */
+    public void checkForExceptions() throws AuthorizationException, IOException, NotFoundException {
+        if (httpResponseCode == 401 || httpResponseCode == 403 || httpResponseCode == 503) {
+            logger.error("Authorization problem! {}: {}", httpMessage, message);
+            throw new AuthorizationException(httpMessage + ": " + message);
+        } else if (httpResponseCode == 400) {
+            logger.warn("Issue with request.  {}: {}", httpMessage, message);
+            throw new IOException(httpMessage + ": " + message);
+        } else if (httpResponseCode == 404) {
+            logger.error("Bad request!  {}: {}", httpMessage, message);
+            throw new NotFoundException(httpMessage + ": " + message);
+        } else if (!success) {
+            logger.warn("Request failed.  {}: {}", httpMessage, message);
+            throw new IOException(httpMessage + ": " + message);
+        }
+    }
 
     /**
      * A message associated with the response - the string representation of the API
@@ -58,25 +88,32 @@ public class FlumeResponseDTO<T> {
     /**
      * The status_message is the name of the status_code.
      */
-    @SerializedName("status_message")
-    public @Nullable String statusMessage;
+    @SerializedName("http_message")
+    public @Nullable String httpMessage;
 
     /**
-     * On a 400 error, the detailed field contains an array of objects containing
-     * the field names that did not validate along with a message for what that
-     * field did not validate. On other errors it will be simply an array of human
-     * readable messages for what went wrong. This will always be null on success.
+     * A field with variable structure contianing details about the error when one occurs.
+     *
+     * Per Flume documentation:
+     * > On a 400 error, the detailed field contains an array of objects containing
+     * > the field names that did not validate along with a message for what that
+     * > field did not validate. On other errors it will be simply an array of human
+     * > readable messages for what went wrong. This will always be null on success.
+     *
+     * Unfortunately, the structure of this field is inconsistent depending on the error.
+     * Some errors give a text response ( "detailed": ["detials"] ) while others give the
+     * expected json ( "detailed": [{"field": "badField", "message": "badMessage"}] ).
+     * Because I can't know what kind of detailed response this will give, I will set
+     * the field as transient to have it ignored in all serializations.
      */
     @SerializedName("detailed")
-    public String @Nullable [] detailedError;
+    public transient String @Nullable [] detailedError;
 
     /**
-     * The data portion of the response - this is an interface to multiple other
-     * data types. I am leaving it as a "String" here to allow for two-step
-     * deserialization by GSON.
+     * The data portion of the response. This may either be an empty array or a simple null.
      */
     @SerializedName("data")
-    public T @Nullable [] dataResults;
+    public @Nullable T @Nullable [] dataResults;
 
     /**
      * The count field contains the total amount of records in existence for the

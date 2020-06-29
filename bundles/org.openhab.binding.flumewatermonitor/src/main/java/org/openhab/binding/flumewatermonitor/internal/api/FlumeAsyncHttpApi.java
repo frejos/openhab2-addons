@@ -14,7 +14,6 @@ package org.openhab.binding.flumewatermonitor.internal.api;
 
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
@@ -35,8 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * {@link Logger} wraps the Flume Tech cloud REST API.
@@ -63,18 +62,49 @@ public class FlumeAsyncHttpApi {
      *
      * @return an array of device id's
      */
-    @Nullable
     public CompletableFuture<List<FlumeDeviceData>> getAllDevices() {
-        long userId = authorizer.getUserId();
-        String url = FLUME_API_ENDPOINT + userId + "/devicess";
+        // Create the future to complete
+        final CompletableFuture<List<FlumeDeviceData>> future = new CompletableFuture<>();
+        // The uri this request is going to
+        String uri = "/devices";
 
-        return getAsyncResponseData(url, HttpMethod.GET, null).thenApply(responseData -> {
-            List<FlumeDeviceData> deviceList = new ArrayList<>();
-            for (String device : responseData) {
-                deviceList.add(gson.fromJson(device, FlumeDeviceData.class));
+        // Create a listener for the onComplete callback after the request finishes
+        BufferingResponseListener listener = new BufferingResponseListener() {
+            @Override
+            public void onComplete(@Nullable Result result) {
+                if (result != null && result.getFailure() != null) {
+                    future.completeExceptionally(result.getFailure());
+                }
+                try {
+                    logger.debug("Content returned by devices query: {}", getContentAsString(StandardCharsets.UTF_8));
+                    String jsonResponse = getContentAsString(StandardCharsets.UTF_8);
+
+                    // Parse the JSON response
+                    FlumeResponseDTO<FlumeDeviceData> dto = gson.fromJson(jsonResponse,
+                            new TypeToken<FlumeResponseDTO<FlumeDeviceData>>() {
+                            }.getType());
+                    dto.checkForExceptions();
+
+                    // Try to extract the device data from the response.
+                    List<FlumeDeviceData> deviceList = new ArrayList<>();
+                    if (dto.dataResults != null && dto.dataResults[0] != null) {
+                        for (FlumeDeviceData device : dto.dataResults) {
+                            logger.trace("device:  {}", dto.dataResults[0]);
+                            deviceList.add(device);
+                        }
+                    }
+                    future.complete(deviceList);
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                }
             }
-            return deviceList;
-        });
+        };
+
+        // check for authorization and then send the request
+        sendAsyncRequest(uri, HttpMethod.GET, null, listener);
+
+        // Return the future
+        return future;
     }
 
     /**
@@ -82,117 +112,97 @@ public class FlumeAsyncHttpApi {
      *
      * @return an array of device id's
      */
-    @Nullable
     public CompletableFuture<@Nullable FlumeDeviceData> getDevice(long deviceId) {
-        long userId = authorizer.getUserId();
-        String url = FLUME_API_ENDPOINT + userId + "/devices/" + deviceId;
+        // Create the future to complete
+        final CompletableFuture<@Nullable FlumeDeviceData> future = new CompletableFuture<>();
+        // The uri this request is going to
+        String uri = "/devices/" + deviceId;
 
-        return getAsyncResponseData(url, HttpMethod.GET, null)
-                .thenApply(responseData -> gson.fromJson(responseData[0], FlumeDeviceData.class));
+        // Create a listener for the onComplete callback after the request finishes
+        BufferingResponseListener listener = new BufferingResponseListener() {
+            @Override
+            public void onComplete(@Nullable Result result) {
+                if (result != null && result.getFailure() != null) {
+                    future.completeExceptionally(result.getFailure());
+                }
+                try {
+                    logger.debug("Content returned by single device query: {}",
+                            getContentAsString(StandardCharsets.UTF_8));
+                    String jsonResponse = getContentAsString(StandardCharsets.UTF_8);
+
+                    // Parse the JSON response
+                    FlumeResponseDTO<FlumeDeviceData> dto = gson.fromJson(jsonResponse,
+                            new TypeToken<FlumeResponseDTO<FlumeDeviceData>>() {
+                            }.getType());
+                    dto.checkForExceptions();
+
+                    // Try to extract the device data from the response.
+                    if (dto.dataResults != null && dto.dataResults[0] != null) {
+                        logger.trace("device info:  {}", dto.dataResults[0]);
+                        future.complete(dto.dataResults[0]);
+                    } else {
+                        future.complete(null);
+                    }
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                }
+            }
+        };
+
+        // check for authorization and then send the request
+        sendAsyncRequest(uri, HttpMethod.GET, null, listener);
+
+        // Return the future
+        return future;
     }
 
     /**
      * Submits a query for minute-by-minute water usage
      *
-     * @return an array of time-value pairs
+     * @return the latest water use value
      */
-    @Nullable
     public CompletableFuture<Float> getWaterUse(long deviceId, long numberMinutes) {
-        long userId = authorizer.getUserId();
-        String url = FLUME_API_ENDPOINT + userId + "/devices/" + deviceId + "/query";
+        // Create the future to complete
+        final CompletableFuture<Float> future = new CompletableFuture<>();
+        // The uri this request is going to
+        String uri = "/devices/" + deviceId + "/query";
 
-        return getAsyncResponseData(url, HttpMethod.POST, createNewQueryRequestContent(numberMinutes))
-                .thenApply(responseData -> {
-                    FlumeQueryData queryResult = gson.fromJson(responseData[0], FlumeQueryData.class);
-                    return queryResult.valuePairs[0].value;
-                });
-    }
+        // Create a listener for the onComplete callback after the request finishes
+        BufferingResponseListener listener = new BufferingResponseListener() {
+            @Override
+            public void onComplete(@Nullable Result result) {
+                if (result != null && result.getFailure() != null) {
+                    future.completeExceptionally(result.getFailure());
+                }
+                try {
+                    logger.debug("Content returned by usage query: {}", getContentAsString(StandardCharsets.UTF_8));
+                    String jsonResponse = getContentAsString(StandardCharsets.UTF_8);
 
-    /**
-     * Gets a list of the user's devices
-     *
-     * @return an array of device id's
-     */
-    @Nullable
-    private CompletableFuture<String[]> getAsyncResponseData(String uri, HttpMethod method,
-            @Nullable StringContentProvider content) {
-        final CompletableFuture<String[]> future = new CompletableFuture<>();
+                    // Parse the JSON response
+                    FlumeResponseDTO<FlumeQueryData> dto = gson.fromJson(jsonResponse,
+                            new TypeToken<FlumeResponseDTO<FlumeQueryData>>() {
+                            }.getType());
+                    dto.checkForExceptions();
 
-        boolean isAuthorized = false;
-        try {
-            isAuthorized = authorizer.isAuthorized();
-        } catch (AuthorizationException e) {
-            future.completeExceptionally(new AuthorizationException(e.getMessage()));
-        } catch (IOException e) {
-            future.completeExceptionally(new IOException(e.getMessage()));
-        }
-        if (!isAuthorized) {
-            future.completeExceptionally(new AuthorizationException("Authentication failure!"));
-        }
-
-        long userId = authorizer.getUserId();
-        client.newRequest(FLUME_API_ENDPOINT + userId + "/devices").method(method).timeout(3, TimeUnit.SECONDS)
-                .header("authorization", "Bearer " + authorizer.getAccessToken()).content(content)
-                .send(new BufferingResponseListener() {
-                    @Override
-                    public void onComplete(@Nullable Result result) {
-                        if (result != null && result.getFailure() != null) {
-                            future.completeExceptionally(result.getFailure());
-                        }
-                        try {
-                            String jsonResponse = getContentAsString(StandardCharsets.UTF_8);
-                            String[] responseData = getResponseData(jsonResponse);
-                            future.complete(responseData);
-                        } catch (JsonSyntaxException e) {
-                            logger.warn("Syntax error in JSON returned by request to {}!", uri);
-                            future.completeExceptionally(e);
-                        } catch (JsonParseException e) {
-                            logger.warn("Exception parsing JSON returned by request to {}!", uri);
-                            future.completeExceptionally(e);
-                        } catch (NullPointerException e) {
-                            logger.warn("One or more expected fields were null in response to request to {}!", uri);
-                            future.completeExceptionally(e);
-                        } catch (AuthorizationException e) {
-                            logger.warn("Authentication failure in response to request to {}!", uri);
-                            future.completeExceptionally(e);
-                        } catch (IOException e) {
-                            logger.warn("IOException in response to request to {}!", uri);
-                            future.completeExceptionally(e);
-                        }
+                    // Try to extract the usage data from the response.
+                    if (dto.dataResults != null && dto.dataResults[0] != null && dto.dataResults[0].valuePairs != null
+                            && dto.dataResults[0].valuePairs[0] != null) {
+                        logger.trace("water use:  {}", dto.dataResults[0].valuePairs[0].value);
+                        future.complete(dto.dataResults[0].valuePairs[0].value);
+                    } else {
+                        future.complete((float) 0);
                     }
-                });
-        return future;
-    }
-
-    /**
-     * Parses a byte request response into the needed token components.
-     *
-     * @param responseContent The raw request response.
-     *
-     * @throws AuthorizationException
-     * @throws IOException
-     */
-    private String @Nullable [] getResponseData(String responseContent) throws AuthorizationException, IOException {
-        try {
-            // First parse the whole response into a generic API response.
-            FlumeResponseDTO dto = gson.fromJson(responseContent, FlumeResponseDTO.class);
-            // Immediately bail if this wasn't successful
-            if (!dto.success) {
-                if (dto.httpResponseCode == 401 || dto.httpResponseCode == 403) {
-                    throw new AuthorizationException("Failed to execute API call: " + dto.message);
-                } else if (dto.httpResponseCode == 404) {
-                    throw new IOException("Resource not found");
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
                 }
             }
-            return dto.dataResults;
-        } catch (JsonSyntaxException e) {
-            logger.warn("Error deserializing JSON response from Flume API!");
-            return new String[0];
-        } catch (AuthorizationException e) {
-            throw new AuthorizationException(e.getMessage());
-        } catch (IOException e) {
-            throw new IOException(e.getMessage());
-        }
+        };
+
+        // check for authorization and then send the request
+        sendAsyncRequest(uri, HttpMethod.POST, createNewQueryRequestContent(numberMinutes), listener);
+
+        // Return the future
+        return future;
     }
 
     /**
@@ -212,5 +222,25 @@ public class FlumeAsyncHttpApi {
                 + ",\"operation\":\"SUM\",\"sort_direction\":\"ASC\"}";
         logger.trace("Water use query request content: {}", requestBody);
         return new StringContentProvider(requestBody, StandardCharsets.UTF_8);
+    }
+
+    private void sendAsyncRequest(String uri, HttpMethod method, @Nullable StringContentProvider content,
+            BufferingResponseListener listener) {
+        // check for authorization and then send the request
+        authorizer.isAuthorized().thenAccept(authResult -> {
+            if (authResult) {
+                long userId = authorizer.getUserId();
+                String url = FLUME_API_ENDPOINT + userId + uri;
+                logger.debug("Making request to {} with method type {} and content {}", url, method, content);
+                // Create the request
+                Request request = client.newRequest(url).method(method).timeout(3, TimeUnit.SECONDS)
+                        .header("authorization", "Bearer " + authorizer.getAccessToken());
+                // Add content, if it exists
+                if (content != null)
+                    request.content(content);
+                // Send the request with the listener attached
+                request.send(listener);
+            }
+        });
     }
 }

@@ -22,14 +22,16 @@
 
 		<label>Flume Sensor</label>
 		<description>Flume water monitor WiFi bridge.</description>
-		<representation-property>deviceId</representation-property>
-		<config-description-ref uri="thing-type:flumewatermonitor:flumesensor"/>
 
 		<channels>
 			<channel id="waterUse" typeId="waterUse"/>
 			<channel id="isWaterOn" typeId="isWaterOn"/>
 			<channel id="batteryLevel" typeId="system.battery-level"/>
 		</channels>
+
+		<representation-property>deviceId</representation-property>
+
+		<config-description-ref uri="thing-type:flumewatermonitor:flumesensor"/>
 
 	</thing-type>
 

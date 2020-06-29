@@ -18,7 +18,6 @@ import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBi
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.CURRENT_BINDING_VERSION;
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.PROPERTY_BINDING_VERSION;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -31,6 +30,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -42,6 +42,7 @@ import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.flumewatermonitor.internal.api.AuthorizationException;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceData;
+import org.openhab.binding.flumewatermonitor.internal.api.NotFoundException;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeSensorConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,19 +193,23 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     private void handleExceptions(Throwable e) {
         if (e instanceof CancellationException) {
-            logger.warn("Get water use query attempt was canceled unexpectedly!");
+            logger.warn("Flume API request attempt was canceled unexpectedly!");
         } else if (e instanceof InterruptedException) {
-            logger.warn("Get water use query was interrupted before completion!");
+            logger.warn("Flume API request attempt was interrupted before completion!");
         } else if (e instanceof ExecutionException) {
             if (e.getCause() instanceof AuthorizationException) {
-                FlumeAccountHandler myHandler = (FlumeAccountHandler) this.getBridge().getHandler();
-                myHandler.applyAuthorizationError(e.getMessage());
-            } else if (e.getCause() instanceof IOException) {
-                if (e.getCause().getMessage().equalsIgnoreCase("Resource not found")) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getCause().getMessage());
-                } else {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getCause().getMessage());
+                logger.warn("Flume API request attempt resulted in an authorization error!");
+                Bridge myBridge = this.getBridge();
+                if (myBridge != null) {
+                    FlumeAccountHandler myHandler = (FlumeAccountHandler) this.getBridge().getHandler();
+                    myHandler.applyAuthorizationError(e.getMessage());
                 }
+            } else if (e.getCause() instanceof NotFoundException) {
+                logger.warn("Flume API request attempt failed because the resource does not exist!");
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getCause().getMessage());
+            } else {
+                logger.warn("{}", e.getCause().getMessage());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getCause().getMessage());
             }
         }
     }

@@ -12,7 +12,8 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.handler;
 
-import java.io.IOException;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.Bridge;
@@ -76,12 +77,20 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         // Example for background initialization:
         scheduler.execute(() -> {
             try {
-                authorizer.isAuthorized();
+                authorizer.isAuthorized().get();
                 updateStatus(ThingStatus.ONLINE);
-            } catch (AuthorizationException e) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-            } catch (IOException e) {
+            } catch (CancellationException e) {
+                logger.warn("Authorization attempt was canceled unexpectedly!");
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            } catch (InterruptedException e) {
+                logger.warn("Authorization attempt was interrupted before completion!");
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof AuthorizationException) {
+                    applyAuthorizationError(e.getMessage());
+                } else {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getCause().getMessage());
+                }
             }
         });
     }

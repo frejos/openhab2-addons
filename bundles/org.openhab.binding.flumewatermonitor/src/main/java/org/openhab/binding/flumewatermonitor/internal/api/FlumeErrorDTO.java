@@ -33,7 +33,7 @@ public class FlumeErrorDTO {
      * readable messages for what went wrong.
      */
     @SerializedName("field")
-    public String @Nullable [] badFields;
+    public @Nullable String badField;
 
     /**
      * A human readable message associated with the error.

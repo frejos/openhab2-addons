@@ -15,12 +15,8 @@ package org.openhab.binding.flumewatermonitor.internal.api;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import javax.security.sasl.AuthenticationException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -36,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * The {@link FlumeJWTAuthorizer} manages the authentication process with the
@@ -48,7 +45,6 @@ import com.google.gson.JsonSyntaxException;
  */
 @NonNullByDefault
 public class FlumeJWTAuthorizer {
-
     private final Logger logger = LoggerFactory.getLogger(FlumeJWTAuthorizer.class);
 
     private FlumeAccountHandler accountHandler;
@@ -60,7 +56,7 @@ public class FlumeJWTAuthorizer {
 
     private HttpClient client;
 
-    private boolean isAuthorized;
+    private Boolean isAuthorized;
 
     public FlumeJWTAuthorizer(FlumeAccountHandler handler) {
         this.accountHandler = handler;
@@ -91,30 +87,16 @@ public class FlumeJWTAuthorizer {
     /**
      * Check for current authentication with the Flume API.
      *
-     * @note This blocks confirming whether or not we are authorized.
-     *
      * @return true if current authorized with the Flume API
      * @throws AuthorizationException
      * @throws IOException
+     * @throws InterruptedException
+     * @throws NotFoundException
      */
-    public boolean isAuthorized() throws AuthorizationException, IOException, InterruptedException {
-        final CompletableFuture<@Nullable Void> f = checkTokens();
-        try {
-            f.get();
-        } catch (CancellationException e) {
-            logger.warn("Authorization attempt was canceled unexpectedly!");
-            throw new IOException(e);
-        } catch (InterruptedException e) {
-            logger.warn("Authorization attempt was interrupted before completion!");
-            throw new InterruptedException(e.getMessage());
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof AuthorizationException) {
-                throw new AuthorizationException(e.getCause().getMessage());
-            } else {
-                throw new IOException(e);
-            }
-        }
-        return isAuthorized;
+    public CompletableFuture<Boolean> isAuthorized() {
+        CompletableFuture<Boolean> f = new CompletableFuture<>();
+        checkTokens().thenRun(() -> f.complete(isAuthorized));
+        return f;
     }
 
     /**
@@ -159,31 +141,34 @@ public class FlumeJWTAuthorizer {
      *
      * @param tokenResponseContent The raw request response.
      */
-    private void parseTokenResponse(String tokenResponse) throws AuthenticationException, IOException {
+    private void parseTokenResponse(String tokenResponse)
+            throws AuthorizationException, IOException, NotFoundException {
         Gson gson = accountHandler.getGson();
         try {
             // First parse the whole response into a generic API response.
-            FlumeResponseDTO dto = gson.fromJson(tokenResponse, FlumeResponseDTO.class);
-            if (!dto.success) {
-                if (dto.httpResponseCode == 400)
-                    // Immediately bail if this wasn't successful
-                    throw new AuthenticationException(
-                            "Failed to get a new access token!  Message: " + dto.detailedError[0]);
-            }
+            FlumeResponseDTO<FlumeTokenData> dto = gson.fromJson(tokenResponse,
+                    new TypeToken<FlumeResponseDTO<FlumeTokenData>>() {
+                    }.getType());
+            dto.checkForExceptions();
 
             // Try to parse the token envelope from the data portion of the response.
-            FlumeTokenData tokenEnvelope = gson.fromJson(dto.dataResults[0], FlumeTokenData.class);
-            accessToken = tokenEnvelope.accessToken;
-            refreshToken = tokenEnvelope.refreshToken;
-            accessTokenExpiresAt = getExpiresAt(tokenEnvelope.accessTokenExpires);
-            logger.trace("FlumeJWTAuth: New access token:  {}", accessToken);
-            logger.trace("FlumeJWTAuth: New access token expires in {} sec", tokenEnvelope.accessTokenExpires);
-            logger.trace("FlumeJWTAuth: New refresh token: {}", refreshToken);
+            if (dto.dataResults != null && dto.dataResults[0] != null) {
+                FlumeTokenData tokenEnvelope = dto.dataResults[0];
+                if (tokenEnvelope != null) {
+                    accessToken = tokenEnvelope.accessToken;
+                    refreshToken = tokenEnvelope.refreshToken;
+                    accessTokenExpiresAt = getExpiresAt(tokenEnvelope.accessTokenExpires);
+                }
+                logger.trace("FlumeJWTAuth: New access token:  {}", accessToken);
+                logger.trace("FlumeJWTAuth: New access token expires in {} sec", tokenEnvelope.accessTokenExpires);
+                logger.trace("FlumeJWTAuth: New refresh token: {}", refreshToken);
+            }
 
             // Split the token into its three parts
             // This will also throw a null pointer exception if the data is missing.
-            String[] tokenArray;
-            if (accessToken != null) {
+            String[] tokenArray = {};
+            String currentToken = this.accessToken;
+            if (currentToken != null) {
                 tokenArray = accessToken.split("\\.");
             }
 
@@ -192,19 +177,8 @@ public class FlumeJWTAuthorizer {
                 parsedToken = gson.fromJson(tokenPayload, FlumeJWTToken.class);
                 isAuthorized = true;
             }
-
         } catch (JsonSyntaxException e) {
-            logger.error("Error deserializing JSON response to access token request!");
-            voidTokens();
-            throw new IOException(e.getMessage());
-        } catch (NullPointerException e) {
-            logger.error("Some portion of the access token response is missing!");
-            voidTokens();
-            throw new IOException(e.getMessage());
-        } catch (AuthenticationException e) {
-            logger.error(e.getMessage());
-            voidTokens();
-            throw new AuthenticationException(e.getMessage());
+            logger.warn("Error deserializing JSON response to access token request!");
         }
     }
 
@@ -227,11 +201,11 @@ public class FlumeJWTAuthorizer {
                             f.completeExceptionally(result.getFailure());
                         }
                         try {
+                            logger.debug("Returned content: {}", getContentAsString(StandardCharsets.UTF_8));
                             parseTokenResponse(getContentAsString(StandardCharsets.UTF_8));
                             f.complete(null);
-                        } catch (AuthenticationException e) {
-                            f.completeExceptionally(e);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            voidTokens();
                             f.completeExceptionally(e);
                         }
                     }
@@ -271,11 +245,11 @@ public class FlumeJWTAuthorizer {
                             f.completeExceptionally(result.getFailure());
                         }
                         try {
+                            logger.debug("Returned content: {}", getContentAsString(StandardCharsets.UTF_8));
                             parseTokenResponse(getContentAsString(StandardCharsets.UTF_8));
                             f.complete(null);
-                        } catch (AuthenticationException e) {
-                            f.completeExceptionally(e);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            voidTokens();
                             f.completeExceptionally(e);
                         }
                     }

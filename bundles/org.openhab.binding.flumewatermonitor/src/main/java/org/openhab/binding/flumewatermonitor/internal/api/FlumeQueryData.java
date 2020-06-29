@@ -25,7 +25,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class FlumeQueryData implements FlumeDataObject {
+public class FlumeQueryData {
 
     /**
      * On a 400 error, the detailed field contains an array of objects containing

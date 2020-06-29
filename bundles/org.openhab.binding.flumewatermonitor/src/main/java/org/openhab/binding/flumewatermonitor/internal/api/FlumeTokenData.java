@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
@@ -23,7 +24,8 @@ import com.google.gson.annotations.SerializedName;
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
-public class FlumeTokenData implements FlumeDataObject {
+@NonNullByDefault
+public class FlumeTokenData {
 
     /**
      * The type of token - should always be "bearer".
