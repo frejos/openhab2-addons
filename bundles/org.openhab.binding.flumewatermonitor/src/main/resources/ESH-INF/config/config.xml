@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config-description:config-descriptions
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:config-description="https://openhab.org/schemas/config-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/config-description/v1.0.0 https://openhab.org/schemas/config-description-1.0.0.xsd">
+
+
+	<config-description uri="thing-type:flumewatermonitor:flumeaccount">
+		<parameter name="flumeUser" type="text" required="false">
+			<label>User Name</label>
+			<description>The user name (email address) associated with your Flume account</description>
+			<required>true</required>
+		</parameter>
+		<parameter name="flumePass" type="text" required="false">
+			<label>Password</label>
+			<description>The password associated with your Flume account</description>
+			<required>true</required>
+			<context>password</context>
+		</parameter>
+		<parameter name="clientId" type="text" required="false">
+			<label>Client ID</label>
+			<description>The client ID for Flume API access. This can be aquired by logging in to your Flume account on a
+				computer (https://portal.flumetech.com/), navigating to the account settings, and scrolling to the very bottom in
+				the section "API Access."</description>
+			<required>true</required>
+		</parameter>
+		<parameter name="clientSecret" type="text" required="false">
+			<label>Client Secret</label>
+			<description>The client secret for Flume API access; found with the client ID."</description>
+			<required>true</required>
+		</parameter>
+	</config-description>
+
+	<config-description uri="thing-type:flumewatermonitor:flumesensor">
+		<parameter name="deviceId" type="text" required="true">
+			<label>Device ID</label>
+			<description>The alphanumeric device ID associated with the Flume Device. Only obtainable via the Flume API.</description>
+			<required>true</required>
+		</parameter>
+		<parameter name="waterUseInterval" type="integer" min="1">
+			<label>Water Use Interval</label>
+			<description>Update time interval in minutes to request water usage updates.</description>
+			<default>1</default>
+			<advanced>true</advanced>
+		</parameter>
+		<parameter name="deviceStatusInterval" type="integer" min="5">
+			<label>Device Status Interval</label>
+			<description>Update time interval in minutes to request device updates.</description>
+			<default>360</default>
+			<advanced>true</advanced>
+		</parameter>
+	</config-description>
+
+</config-description:config-descriptions>

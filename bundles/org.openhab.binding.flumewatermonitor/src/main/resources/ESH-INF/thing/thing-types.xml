@@ -4,29 +4,47 @@
 	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
-	<!-- Sample Thing Type -->
-	<thing-type id="sample">
-		<label>FlumeWaterMonitor Binding Thing</label>
-		<description>Sample thing for FlumeWaterMonitor Binding</description>
+
+	<!-- The Bond Bridge -->
+	<bridge-type id="flumeAccount">
+		<label>FlumeTech Account</label>
+		<description>The user account with Flume</description>
+		<representation-property>flumeUser</representation-property>
+		<config-description-ref uri="thing-type:flumewatermonitor:flumeaccount"/>
+	</bridge-type>
+
+	<!-- Thing Types -->
+	<thing-type id="FlumeSensor">
+
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="flumeAccount"/>
+		</supported-bridge-type-refs>
+
+		<label>Flume Sensor</label>
+		<description>Flume water monitor WiFi bridge.</description>
+		<representation-property>deviceId</representation-property>
+		<config-description-ref uri="thing-type:flumewatermonitor:flumesensor"/>
 
 		<channels>
-			<channel id="channel1" typeId="sample-channel" />
+			<channel id="waterUse" typeId="waterUse"/>
+			<channel id="isWaterOn" typeId="isWaterOn"/>
+			<channel id="batteryLevel" typeId="system.battery-level"/>
 		</channels>
-
-		<config-description>
-			<parameter name="config1" type="text" required="true">
-				<label>Sample Parameter</label>
-				<description>This is a sample text configuration parameter</description>
-			</parameter>
-		</config-description>
 
 	</thing-type>
 
 	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>flumewatermonitorItem</item-type>
-		<label>FlumeWaterMonitor Binding Channel</label>
-		<description>Sample channel for FlumeWaterMonitor Binding</description>
+	<channel-type id="waterUse">
+		<item-type>Number</item-type>
+		<label>Total water use over interval</label>
+		<description>The total amount of water (in gallons) used over the update interval</description>
+		<state pattern="%.3f %unit%" readOnly="true"></state>
+	</channel-type>
+	<channel-type id="isWaterOn">
+		<item-type>Switch</item-type>
+		<label>Current water use state</label>
+		<description>Wether or not the water appears to be running - that is, the most recent usage level was non-zero.</description>
+		<state readOnly="true"></state>
 	</channel-type>
 
 </thing:thing-descriptions>
