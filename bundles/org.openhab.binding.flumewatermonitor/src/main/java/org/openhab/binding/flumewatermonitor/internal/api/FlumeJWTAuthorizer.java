@@ -18,21 +18,19 @@ import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeAccountConfiguration;
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 
 /**
  * The {@link FlumeJWTAuthorizer} manages the authentication process with the
@@ -53,17 +51,15 @@ public class FlumeJWTAuthorizer {
     private @Nullable FlumeJWTToken parsedToken;
     private @Nullable String refreshToken;
     private long accessTokenExpiresAt;
-
-    private HttpClient client;
+    private Gson gson;
 
     private Boolean isAuthorized;
 
     public FlumeJWTAuthorizer(FlumeAccountHandler handler) {
         this.accountHandler = handler;
+        this.gson = accountHandler.getGson();
         logger.debug("Created a JWT authorizer for the Flume account");
         isAuthorized = false;
-
-        client = new HttpClient();
     }
 
     /**
@@ -81,33 +77,38 @@ public class FlumeJWTAuthorizer {
      * @return The the numeric user ID for API access.
      */
     public long getUserId() {
-        return this.parsedToken.flumeUserId;
+        FlumeJWTToken currentParsedToken = this.parsedToken;
+        if (currentParsedToken != null) {
+            return currentParsedToken.flumeUserId;
+        }
+        return 0;
     }
 
     /**
      * Check for current authentication with the Flume API.
      *
      * @return true if current authorized with the Flume API
-     * @throws AuthorizationException
-     * @throws IOException
-     * @throws InterruptedException
-     * @throws NotFoundException
      */
     public CompletableFuture<Boolean> isAuthorized() {
-        CompletableFuture<Boolean> f = new CompletableFuture<>();
-        checkTokens().thenRun(() -> f.complete(isAuthorized));
-        return f;
+        return checkTokens().thenApply(result -> isAuthorized).exceptionally(e -> {
+            logger.debug("Completed exceptionally {}", e.getMessage());
+            return false;
+        });
     }
 
     /**
      * Check that the refresh and access tokens are valid.
      */
     private CompletableFuture<@Nullable Void> checkTokens() {
-        if (refreshToken == null) {
+        String currentRefresh = this.refreshToken;
+        if (currentRefresh == null) {
+            logger.trace("No stored refresh token.  A new refresh and access token will be required.");
             return getNewTokens();
         } else if (isExpired(accessTokenExpiresAt)) {
+            logger.trace("Access token is expired, use refresh token to get a new one.");
             return refreshAccessToken();
         } else {
+            logger.trace("Tokens are valid, yay!");
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -120,7 +121,6 @@ public class FlumeJWTAuthorizer {
      */
     private StringContentProvider createNewTokenRequestContent() {
         FlumeAccountConfiguration currentConfig = accountHandler.getAccountConfiguration();
-        Gson gson = accountHandler.getGson();
         String requestBody = gson.toJson(currentConfig);
         logger.trace("Access token request content: {}", requestBody);
         return new StringContentProvider(requestBody, StandardCharsets.UTF_8);
@@ -141,76 +141,88 @@ public class FlumeJWTAuthorizer {
      *
      * @param tokenResponseContent The raw request response.
      */
-    private void parseTokenResponse(String tokenResponse)
-            throws AuthorizationException, IOException, NotFoundException {
-        Gson gson = accountHandler.getGson();
-        try {
-            // First parse the whole response into a generic API response.
-            FlumeResponseDTO<FlumeTokenData> dto = gson.fromJson(tokenResponse,
-                    new TypeToken<FlumeResponseDTO<FlumeTokenData>>() {
-                    }.getType());
-            dto.checkForExceptions();
 
-            // Try to parse the token envelope from the data portion of the response.
-            if (dto.dataResults != null && dto.dataResults[0] != null) {
-                FlumeTokenData tokenEnvelope = dto.dataResults[0];
-                if (tokenEnvelope != null) {
-                    accessToken = tokenEnvelope.accessToken;
-                    refreshToken = tokenEnvelope.refreshToken;
-                    accessTokenExpiresAt = getExpiresAt(tokenEnvelope.accessTokenExpires);
-                }
-                logger.trace("FlumeJWTAuth: New access token:  {}", accessToken);
-                logger.trace("FlumeJWTAuth: New access token expires in {} sec", tokenEnvelope.accessTokenExpires);
-                logger.trace("FlumeJWTAuth: New refresh token: {}", refreshToken);
-            }
+    private void parseTokenResponse(FlumeTokenData tokenEnvelope) {
+        logger.trace("Attempting to parse the token response");
+        accessToken = tokenEnvelope.accessToken;
+        refreshToken = tokenEnvelope.refreshToken;
+        accessTokenExpiresAt = getExpiresAt(tokenEnvelope.accessTokenExpires);
+        logger.trace("FlumeJWTAuth: New access token:  {}", accessToken);
+        logger.trace("FlumeJWTAuth: New access token expires in {} sec", tokenEnvelope.accessTokenExpires);
+        logger.trace("FlumeJWTAuth: New refresh token: {}", refreshToken);
 
-            // Split the token into its three parts
-            // This will also throw a null pointer exception if the data is missing.
-            String[] tokenArray = {};
-            String currentToken = this.accessToken;
-            if (currentToken != null) {
-                tokenArray = accessToken.split("\\.");
-            }
+        // Split the token into its three parts
+        // This will also throw a null pointer exception if the data is missing.
+        String[] tokenArray;
+        String currentToken = this.accessToken;
+        if (currentToken != null) {
+            tokenArray = currentToken.split("\\.");
+        }
 
-            if (tokenArray.length == 3) {
+        if (tokenArray.length == 3) {
+            try {
                 String tokenPayload = new String(Base64.getDecoder().decode(tokenArray[1]));
                 parsedToken = gson.fromJson(tokenPayload, FlumeJWTToken.class);
                 isAuthorized = true;
+            } catch (JsonSyntaxException e) {
+                logger.warn("Error deserializing JSON response to access token request!");
             }
-        } catch (JsonSyntaxException e) {
-            logger.warn("Error deserializing JSON response to access token request!");
         }
     }
 
-    private CompletableFuture<@Nullable Void> getNewTokens() {
-        final CompletableFuture<@Nullable Void> f = new CompletableFuture<>();
+    private CompletableFuture<@Nullable Void> sendTokenRequest(StringContentProvider content) {
+        // Create a future to complete
+        final CompletableFuture<FlumeTokenData []> future = new CompletableFuture<>();
+        // Create a listener for the response
+        FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>(future, gson);
 
+        try {
+            HttpClient client = accountHandler.getClient();
+            Request newRequest = client.newRequest("https://api.flumetech.com/oauth/token").method(HttpMethod.POST)
+                    .content(content).timeout(3, TimeUnit.SECONDS).header("content-type", "application/json");
+            logger.trace("Request scheme: {}", newRequest.getScheme());
+            logger.trace("Request method: {}", newRequest.getMethod());
+            logger.trace("Request host: {}", newRequest.getHost());
+            logger.trace("Request path: {}", newRequest.getPath());
+            logger.trace("Request headers: {}", newRequest.getHeaders());
+            if (newRequest.getContent() != null) {
+                logger.trace("Request content: {}", newRequest.getContent());
+            }
+            newRequest.send(listener);
+        } catch (Exception e) {
+            logger.debug("Error in sending request: {}", e.getMessage());
+            future.completeExceptionally(e);
+        }
+
+        // Return the future
+        return future.thenApply(result -> {
+            FlumeTokenData firstEnvelope = result[0];
+            logger.trace("Returned token envelope:  {}", firstEnvelope);
+            if (firstEnvelope == null) {
+                logger.info("Returned token envelope is null");
+                voidTokens();
+                future.completeExceptionally(new IOException("Returned token envelope is null!"));
+            } else {
+                parseTokenResponse(firstEnvelope);
+            }
+            return null;
+        }).exceptionally(e -> {
+            logger.info("Exception in the token request future: {}", e.getMessage());
+            future.completeExceptionally(new IOException(e.getMessage()));
+            voidTokens();
+            return null;
+        });
+    }
+
+    private CompletableFuture<@Nullable Void> getNewTokens() {
         // First check to see if another thread has updated it
         if (!isExpired(accessTokenExpiresAt)) {
             logger.debug("Access and refresh tokens are still valid; new ones are not needed.");
-            f.complete(null);
+            return CompletableFuture.completedFuture(null);
         }
         logger.debug("FlumeJWTAuth: Requesting a new access and refresh token.");
 
-        client.newRequest("https://api.flumetech.com/oauth/token").method(HttpMethod.POST)
-                .content(createNewTokenRequestContent()).timeout(3, TimeUnit.SECONDS)
-                .send(new BufferingResponseListener() {
-                    @Override
-                    public void onComplete(@Nullable Result result) {
-                        if (result != null && result.getFailure() != null) {
-                            f.completeExceptionally(result.getFailure());
-                        }
-                        try {
-                            logger.debug("Returned content: {}", getContentAsString(StandardCharsets.UTF_8));
-                            parseTokenResponse(getContentAsString(StandardCharsets.UTF_8));
-                            f.complete(null);
-                        } catch (Exception e) {
-                            voidTokens();
-                            f.completeExceptionally(e);
-                        }
-                    }
-                });
-        return f;
+        return sendTokenRequest(createNewTokenRequestContent());
     }
 
     /**
@@ -229,32 +241,14 @@ public class FlumeJWTAuthorizer {
     }
 
     private CompletableFuture<@Nullable Void> refreshAccessToken() {
-        final CompletableFuture<@Nullable Void> f = new CompletableFuture<>();
         // First check to see if another thread has updated it
         if (!isExpired(accessTokenExpiresAt)) {
             logger.debug("Access token is still valid; a new one is not needed.");
+            return CompletableFuture.completedFuture(null);
         }
         logger.debug("FlumeJWTAuth: Updating expired ACCESS token using refresh token {}", refreshToken);
 
-        client.newRequest("https://api.flumetech.com/oauth/token").method(HttpMethod.POST)
-                .content(createRefreshTokenRequestContent()).timeout(3, TimeUnit.SECONDS)
-                .header("Content-Type", "application/json").send(new BufferingResponseListener() {
-                    @Override
-                    public void onComplete(@Nullable Result result) {
-                        if (result != null && result.getFailure() != null) {
-                            f.completeExceptionally(result.getFailure());
-                        }
-                        try {
-                            logger.debug("Returned content: {}", getContentAsString(StandardCharsets.UTF_8));
-                            parseTokenResponse(getContentAsString(StandardCharsets.UTF_8));
-                            f.complete(null);
-                        } catch (Exception e) {
-                            voidTokens();
-                            f.completeExceptionally(e);
-                        }
-                    }
-                });
-        return f;
+        return sendTokenRequest(createRefreshTokenRequestContent());
     }
 
     private boolean isExpired(long expiresAt) {

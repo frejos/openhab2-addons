@@ -21,6 +21,7 @@ import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBi
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.flumewatermonitor.internal.api.AuthorizationException;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceData;
@@ -62,7 +64,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(FlumeSensorHandler.class);
 
     private @NonNullByDefault({}) FlumeSensorConfiguration config;
-    private final FlumeAsyncHttpApi asyncApi;
+    private @Nullable FlumeAsyncHttpApi asyncApi;
 
     private @Nullable ScheduledFuture<?> waterUseJob;
     private @Nullable ScheduledFuture<?> deviceStatusJob;
@@ -72,14 +74,36 @@ public class FlumeSensorHandler extends BaseThingHandler {
     public FlumeSensorHandler(Thing thing) {
         super(thing);
         disposed = true;
-        FlumeAccountHandler myAccountHandler = (FlumeAccountHandler) this.getBridge().getHandler();
-        asyncApi = myAccountHandler.getApi();
         logger.trace("Created handler for Flume sensor.");
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        // Not needed, no commands are supported
+        if (command instanceof RefreshType) {
+            if (hasConfigurationError() || disposed) {
+                logger.trace("Thing disposed, will not refresh channels!");
+                return;
+            }
+            getApiInstance();
+            FlumeAsyncHttpApi currentApi = this.asyncApi;
+            if (currentApi == null) {
+                return;
+            }
+            logger.trace("Polling for water use");
+            try {
+                DecimalType latestWaterUse = new DecimalType(
+                        currentApi.getWaterUse(config.deviceId, config.waterUseInterval).get());
+                OnOffType isWaterOn = latestWaterUse.floatValue() > 0 ? OnOffType.ON : OnOffType.OFF;
+                setBridgeOnline();
+                updateStatus(ThingStatus.ONLINE);
+                updateState(CHANNEL_USAGE, latestWaterUse);
+                updateState(CHANNEL_WATER_ON, isWaterOn);
+            } catch (Exception e) {
+                handleExceptions(e);
+            }
+        } else {
+            logger.debug("Command {} not supported.", command);
+        }
     }
 
     @Override
@@ -92,6 +116,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
         // from the thing handler initialization. We set this upfront to reliably check
         // status updates in unit tests.
         updateStatus(ThingStatus.UNKNOWN);
+        disposed = false;
 
         // If the binding was updated, change the thing type back to itself to force
         // channels to be reloaded from XML.
@@ -103,9 +128,11 @@ public class FlumeSensorHandler extends BaseThingHandler {
             return;
         }
 
-        logger.debug("Starting device status job");
+        getApiInstance();
+
+        logger.debug("Starting device status job for every {} minute[s]", config.deviceStatusInterval);
         startdeviceStatusJob();
-        logger.debug("Starting water use job");
+        logger.debug("Starting water use job for every {} minute[s]", config.waterUseInterval);
         startwaterUseJob();
 
         // NOTE: Not setting the thing online here, the water use/status jobs will do
@@ -136,15 +163,22 @@ public class FlumeSensorHandler extends BaseThingHandler {
     private synchronized void startwaterUseJob() {
         final ScheduledFuture<?> currentUseJob = this.waterUseJob;
         if (currentUseJob == null || currentUseJob.isCancelled()) {
-            Runnable pollingCommand = () -> {
+            Runnable waterRunnable = () -> {
                 if (hasConfigurationError() || disposed) {
+                    logger.trace("Thing disposed, will not update water use!");
+                    return;
+                }
+                getApiInstance();
+                FlumeAsyncHttpApi currentApi = this.asyncApi;
+                if (currentApi == null) {
                     return;
                 }
                 logger.trace("Polling for water use");
                 try {
                     DecimalType latestWaterUse = new DecimalType(
-                            asyncApi.getWaterUse(config.deviceId, config.waterUseInterval).get());
+                            currentApi.getWaterUse(config.deviceId, config.waterUseInterval).get());
                     OnOffType isWaterOn = latestWaterUse.floatValue() > 0 ? OnOffType.ON : OnOffType.OFF;
+                    setBridgeOnline();
                     updateStatus(ThingStatus.ONLINE);
                     updateState(CHANNEL_USAGE, latestWaterUse);
                     updateState(CHANNEL_WATER_ON, isWaterOn);
@@ -152,7 +186,8 @@ public class FlumeSensorHandler extends BaseThingHandler {
                     handleExceptions(e);
                 }
             };
-            this.waterUseJob = scheduler.scheduleWithFixedDelay(pollingCommand, 0, config.waterUseInterval,
+            logger.trace("Asking the Flume server for water use every {} minutes.", config.waterUseInterval);
+            this.waterUseJob = scheduler.scheduleWithFixedDelay(waterRunnable, 0, config.waterUseInterval,
                     TimeUnit.MINUTES);
         }
     }
@@ -161,33 +196,51 @@ public class FlumeSensorHandler extends BaseThingHandler {
     private synchronized void startdeviceStatusJob() {
         final ScheduledFuture<?> currentStatusJob = this.deviceStatusJob;
         if (currentStatusJob == null || currentStatusJob.isCancelled()) {
-            Runnable pollingCommand = () -> {
+            Runnable statusRunnable = () -> {
                 if (hasConfigurationError() || disposed) {
+                    logger.trace("Thing disposed, will not update battery level!");
+                    return;
+                }
+                getApiInstance();
+                FlumeAsyncHttpApi currentApi = this.asyncApi;
+                if (currentApi == null) {
                     return;
                 }
                 logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
                 try {
-                    FlumeDeviceData deviceState = asyncApi.getDevice(config.deviceId).get();
+                    FlumeDeviceData deviceState = currentApi.getDevice(config.deviceId).get();
                     updateStatus(ThingStatus.ONLINE);
-                    switch (deviceState.batteryLevel) {
-                        case "LOW":
-                            updateState(CHANNEL_BATTERY, new PercentType(25));
-                            break;
-                        case "MEDIUM":
-                            updateState(CHANNEL_BATTERY, new PercentType(50));
-                            break;
-                        case "HIGH":
-                            updateState(CHANNEL_BATTERY, new PercentType(75));
-                            break;
-                        default:
-                            break;
+                    String battLevel = deviceState.batteryLevel;
+                    if (battLevel == null) {
+                        logger.info("No battery information in the device response!");
+                        return;
+                    } else {
+                        updateBattery(battLevel);
+                        return;
                     }
                 } catch (Exception e) {
                     handleExceptions(e);
                 }
             };
-            this.deviceStatusJob = scheduler.scheduleWithFixedDelay(pollingCommand, 0, config.deviceStatusInterval,
+            logger.trace("Asking the Flume server for battery level every {} minutes.", config.deviceStatusInterval);
+            this.deviceStatusJob = scheduler.scheduleWithFixedDelay(statusRunnable, 0, config.deviceStatusInterval,
                     TimeUnit.MINUTES);
+        }
+    }
+
+    private void updateBattery(String batteryLevel) {
+        switch (batteryLevel) {
+            case "LOW":
+                updateState(CHANNEL_BATTERY, new PercentType(25));
+                break;
+            case "MEDIUM":
+                updateState(CHANNEL_BATTERY, new PercentType(50));
+                break;
+            case "HIGH":
+                updateState(CHANNEL_BATTERY, new PercentType(75));
+                break;
+            default:
+                break;
         }
     }
 
@@ -196,13 +249,16 @@ public class FlumeSensorHandler extends BaseThingHandler {
             logger.warn("Flume API request attempt was canceled unexpectedly!");
         } else if (e instanceof InterruptedException) {
             logger.warn("Flume API request attempt was interrupted before completion!");
-        } else if (e instanceof ExecutionException) {
+        } else if (e instanceof ExecutionException || e instanceof CompletionException) {
             if (e.getCause() instanceof AuthorizationException) {
                 logger.warn("Flume API request attempt resulted in an authorization error!");
+                @Nullable
                 Bridge myBridge = this.getBridge();
                 if (myBridge != null) {
-                    FlumeAccountHandler myHandler = (FlumeAccountHandler) this.getBridge().getHandler();
-                    myHandler.applyAuthorizationError(e.getMessage());
+                    FlumeAccountHandler myBridgeHandler = (FlumeAccountHandler) myBridge.getHandler();
+                    if (myBridgeHandler != null) {
+                        myBridgeHandler.applyAuthorizationError(e.getMessage());
+                    }
                 }
             } else if (e.getCause() instanceof NotFoundException) {
                 logger.warn("Flume API request attempt failed because the resource does not exist!");
@@ -210,6 +266,34 @@ public class FlumeSensorHandler extends BaseThingHandler {
             } else {
                 logger.warn("{}", e.getCause().getMessage());
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getCause().getMessage());
+            }
+        }
+    }
+
+    private boolean getApiInstance() {
+        Bridge myAccount = this.getBridge();
+        if (myAccount == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Flume account missing!");
+            return false;
+        }
+
+        FlumeAccountHandler myAccountHandler = (FlumeAccountHandler) myAccount.getHandler();
+        if (myAccountHandler == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Flume account missing!");
+            return false;
+        }
+
+        this.asyncApi = myAccountHandler.getAsyncApi();
+        return true;
+    }
+
+    private void setBridgeOnline() {
+        @Nullable
+        Bridge myBridge = this.getBridge();
+        if (myBridge != null) {
+            FlumeAccountHandler myBridgeHandler = (FlumeAccountHandler) myBridge.getHandler();
+            if (myBridgeHandler != null) {
+                myBridgeHandler.setAccountOnline();
             }
         }
     }
