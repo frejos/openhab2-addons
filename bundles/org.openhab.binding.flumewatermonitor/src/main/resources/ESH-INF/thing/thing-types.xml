@@ -14,7 +14,7 @@
 	</bridge-type>
 
 	<!-- Thing Types -->
-	<thing-type id="FlumeSensor">
+	<thing-type id="flumeSensor">
 
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="flumeAccount"/>

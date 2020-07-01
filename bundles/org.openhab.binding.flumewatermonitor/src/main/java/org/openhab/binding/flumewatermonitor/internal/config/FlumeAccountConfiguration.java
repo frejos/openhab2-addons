@@ -28,6 +28,12 @@ import com.google.gson.annotations.SerializedName;
 public class FlumeAccountConfiguration {
 
     /**
+     * Flume API access grant type - will always be "password".
+     */
+    @SerializedName("grant_type")
+    public String grantType = FLUME_TOKEN_GRANT_TYPE;
+
+    /**
      * Flume account user name.
      */
     @SerializedName("username")
@@ -50,10 +56,4 @@ public class FlumeAccountConfiguration {
      */
     @SerializedName("client_secret")
     public String clientSecret = MISSING_CLIENT_SECRET;
-
-    /**
-     * Flume API access grant type - will always be "password".
-     */
-    @SerializedName("grant_type")
-    public String grantType = FLUME_TOKEN_GRANT_TYPE;
 }

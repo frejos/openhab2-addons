@@ -14,8 +14,6 @@ package org.openhab.binding.flumewatermonitor.internal;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
@@ -30,7 +28,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class FlumeWaterMonitorBindingConstants {
 
     private static final String BINDING_ID = "flumewatermonitor";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.00";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.17";
 
     // List of all Thing Type UIDs
     /**
@@ -54,8 +52,7 @@ public class FlumeWaterMonitorBindingConstants {
     /**
      * The supported thing types.
      */
-    public static final Set<ThingTypeUID> SUPPORTED_DEVICE_TYPES = Stream.of(THING_TYPE_FLUME_SENSOR)
-            .collect(Collectors.toSet());
+    public static final Set<ThingTypeUID> SUPPORTED_DEVICE_TYPES = Collections.singleton(THING_TYPE_FLUME_SENSOR);
 
     public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_TYPES = Collections.singleton(THING_TYPE_FLUME_ACCOUNT);
 
