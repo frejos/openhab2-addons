@@ -41,6 +41,9 @@ public class FlumeAsyncHttpApi {
     private FlumeAccountHandler accountHandler;
     private static final String NULL_REQUEST_NOTICE = "Created request was null!";
 
+    /**
+     * Create a new {@link FlumeAsyncHttpApi}
+     */
     public FlumeAsyncHttpApi(FlumeAccountHandler accountHandler) {
         this.accountHandler = accountHandler;
     }

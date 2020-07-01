@@ -36,7 +36,8 @@ import com.google.gson.JsonSyntaxException;
  * Flume Tech API. This class requests access and refresh tokens based on the
  * expiration times provided by said API.
  *
- * Taken from the ZoneMinder (v2)binding by Mark Hilbush
+ * Some portions taken from the ZoneMinder (v2) binding by Mark Hilbush and the
+ * NikoHomeControlBridgeHandler2 by Mark Herwege
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
@@ -54,6 +55,11 @@ public class FlumeJWTAuthorizer {
 
     private Boolean isAuthorized;
 
+    /**
+     * Construct a new authorizer for the Flume account.
+     *
+     * @param handler A handler associated with a Flume user account.
+     */
     public FlumeJWTAuthorizer(FlumeAccountHandler handler) {
         this.accountHandler = handler;
         logger.debug("Created a JWT authorizer for the Flume account");
@@ -96,6 +102,9 @@ public class FlumeJWTAuthorizer {
 
     /**
      * Check that the refresh and access tokens are valid.
+     *
+     * @return A completable future which will check if the current tokens are valid, refresh as necessary, and finally
+     *         return null.
      */
     private CompletableFuture<@Nullable Void> checkTokens() {
         String currentRefresh = this.refreshToken;
@@ -113,7 +122,7 @@ public class FlumeJWTAuthorizer {
 
     /**
      * Create the authentication request body for a request for a new access and
-     * refresh token.
+     * refresh token. This is a simple json-ification of the account configuration information.
      *
      * @return The request body
      */
@@ -135,7 +144,7 @@ public class FlumeJWTAuthorizer {
     }
 
     /**
-     * Parses a byte request response into the needed token components.
+     * Parses a byte request response into the needed token components and saves those to the class instance.
      *
      * @param tokenResponseContent The raw request response.
      */
@@ -167,6 +176,14 @@ public class FlumeJWTAuthorizer {
         }
     }
 
+    /**
+     * Send a request to for a new access and refresh token or refresh the current token.
+     *
+     * @param content A string content provider with a fully formed json request for new tokens
+     *
+     * @return A completable future which will be void after the token has been received, parsed, and the values saved
+     *         to the class instance
+     */
     private CompletableFuture<@Nullable Void> sendTokenRequest(StringContentProvider content) {
         // Create a listener for the response
         FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>();
@@ -205,6 +222,12 @@ public class FlumeJWTAuthorizer {
         });
     }
 
+    /**
+     * Send a request for new tokens.
+     *
+     * @return A completable future which will be void after the token has been received, parsed, and the values saved
+     *         to the class instance
+     */
     private CompletableFuture<@Nullable Void> getNewTokens() {
         // First check to see if another thread has updated it
         if (!isExpired(accessTokenExpiresAt)) {
@@ -218,7 +241,7 @@ public class FlumeJWTAuthorizer {
 
     /**
      * Create the authentication request body for a request to refresh the access
-     * token.
+     * token using the refresh token.
      *
      * @return The request body
      */
@@ -231,6 +254,12 @@ public class FlumeJWTAuthorizer {
         return new StringContentProvider(requestBody, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Send a request to refresh the current access token using the refresh token.
+     *
+     * @return A completable future which will be void after the token has been received, parsed, and the values saved
+     *         to the class instance
+     */
     private CompletableFuture<@Nullable Void> refreshAccessToken() {
         // First check to see if another thread has updated it
         if (!isExpired(accessTokenExpiresAt)) {
@@ -242,6 +271,9 @@ public class FlumeJWTAuthorizer {
         return sendTokenRequest(createRefreshTokenRequestContent());
     }
 
+    /**
+     * Check the expiration time of the token against the current system time.
+     */
     private boolean isExpired(long expiresAt) {
         return (System.currentTimeMillis() / 1000) > expiresAt;
     }

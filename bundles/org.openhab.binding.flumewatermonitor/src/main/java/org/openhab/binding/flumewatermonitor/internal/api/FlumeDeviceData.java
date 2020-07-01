@@ -89,7 +89,7 @@ public class FlumeDeviceData implements FlumeDataInterface {
     public @Nullable String batteryLevel;
 
     /**
-     * A text description of the product.
+     * A text description of the product, probably "flume-1"
      */
     @SerializedName("product")
     public @Nullable String product;

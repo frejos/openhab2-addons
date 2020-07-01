@@ -43,8 +43,6 @@ import org.slf4j.LoggerFactory;
  * The {@link FlumeAccountHandler} is responsible for handling commands, which
  * are sent to one of the channels.
  *
- * Some code for JWT handling taken from NikoHomeControlBridgeHandler2 by Mark Herwege
- *
  * @author Sara Geleskie Damiano - Initial contribution *
  */
 @NonNullByDefault
@@ -59,6 +57,11 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
 
     private final HttpClient client = new HttpClient(new SslContextFactory());
 
+    /**
+     * Create a new account handler.
+     *
+     * @param bridge The account thing to handle.
+     */
     public FlumeAccountHandler(Bridge bridge) {
         super(bridge);
         logger.trace("Creating handler for Flume account");
@@ -82,7 +85,7 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         // we set this upfront to reliably check status updates in unit tests.
         updateStatus(ThingStatus.UNKNOWN);
 
-        // Example for background initialization:
+        // To initialize, confirm that we can authorize with the provided credentials.
         scheduler.execute(() -> {
             try {
                 authorizer.isAuthorized().join();
@@ -99,6 +102,19 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         });
     }
 
+    @Override
+    public void dispose() {
+        logger.debug("Disposing handler for Flume account {}.", this.getThing().getUID());
+
+        if (client.isRunning()) {
+            try {
+                client.stop();
+            } catch (Exception e) {
+                logger.info("Error stopping client: {}", e.getMessage());
+            }
+        }
+    }
+
     /**
      * Gets the account configuration.
      *
@@ -109,6 +125,12 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         return config;
     }
 
+    /**
+     * Attempt to create a new HTTP client for communication with the outside world.
+     *
+     * @return The created client
+     * @throws Exception If the client cannot be created for some reason.
+     */
     public HttpClient getClient() throws Exception {
         if (!client.isStarted()) {
             try {
@@ -122,20 +144,41 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         return this.client;
     }
 
+    /**
+     * Get the API instance tied to this account handler.
+     *
+     * @return the api instance.
+     */
     public FlumeAsyncHttpApi getAsyncApi() {
         return this.asyncApi;
     }
 
+    /**
+     * Allows a flume sensor, api instance, or the authorizor to inform the account handler that there has been an
+     * authorization error and the account should be considered to be badly configured and offline.
+     */
     public void applyAuthorizationError(String message) {
         logger.debug("Account handler notified of authorization error.  Setting account offline.");
         updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, message);
     }
 
+    /**
+     * Allows a flume sensor, api instance, or the authorizor to inform the account handler that the last call was
+     * successful and the account is definitely "online".
+     */
     public void setAccountOnline() {
         logger.debug("Account handler notified of successful request - it must be online.");
         updateStatus(ThingStatus.ONLINE);
     }
 
+    /**
+     * Creates a request to send to the Flume API but does not send the request.
+     *
+     * @param uri The URI the request is going to; the path *after* the api address.
+     * @param method The HTTP method to use.
+     * @param content The content of the request (for post requests).
+     * @return A formed Jetty request.
+     */
     public @Nullable Request createAsyncRequest(String uri, HttpMethod method,
             @Nullable StringContentProvider content) {
         String url = FLUME_API_ENDPOINT + uri;
@@ -163,6 +206,15 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         }
     }
 
+    /**
+     * Confirms that the user is authorized to make requests and then forms a request for an endpoint that requires the
+     * authorization but does not send the request.
+     *
+     * @param uri The URI the request is going to; the path *after* the api address.
+     * @param method The HTTP method to use.
+     * @param content The content of the request (for post requests).
+     * @return A formed Jetty request.
+     */
     public @Nullable Request createAuthorizedRequest(String uri, HttpMethod method,
             @Nullable StringContentProvider content) {
         logger.trace("Confirming authorization before creating request");

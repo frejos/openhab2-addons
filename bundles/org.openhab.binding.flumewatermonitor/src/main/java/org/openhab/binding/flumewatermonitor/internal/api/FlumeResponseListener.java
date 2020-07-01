@@ -28,7 +28,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * {@link FlumeResponseListener} listens for async http responses
+ * The {@link FlumeResponseListener} listens for async http responses and translates them into a completable future that
+ * will resolve to the specific time of Flume data.
+ *
+ * @param <T> Template parameter for the type of {@link FlumeDataInterface} that should be deseralized from the request.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
@@ -40,14 +43,29 @@ public class FlumeResponseListener<T extends FlumeDataInterface> extends Bufferi
     private CompletableFuture<@Nullable T @Nullable []> future;
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
+    /**
+     * Construct a new {@link FlumeResponseListener}
+     */
     public FlumeResponseListener() {
         this.future = new CompletableFuture<>();
     }
 
+    /**
+     * Get a future which will complete with the full array of data subtypes.
+     *
+     * @return A completable future which will resovlve to the array of data subtypes or null they aren't present in the
+     *         response.
+     */
     public CompletableFuture<@Nullable T @Nullable []> getFutureArray() {
         return this.future;
     }
 
+    /**
+     * Get a future which will complete with the first item of the array of data subtypes or null if none are present.
+     *
+     * @return A completable future which will resovlve to first item in the array of data subtypes or null none are
+     *         present in the response.
+     */
     public CompletableFuture<@Nullable T> getFutureSingle() {
         return this.future.thenApply(result -> {
             if (result != null) {
@@ -64,7 +82,9 @@ public class FlumeResponseListener<T extends FlumeDataInterface> extends Bufferi
         });
     }
 
-    // Create a listener for the onComplete callback after the request finishes
+    /**
+     * A callback that will run when a call to the API completes.
+     */
     @Override
     public void onComplete(@Nullable Result result) {
         if (result == null) {

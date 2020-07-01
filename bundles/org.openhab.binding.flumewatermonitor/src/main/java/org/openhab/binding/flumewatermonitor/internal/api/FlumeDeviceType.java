@@ -20,7 +20,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * This enum represents the possible device types
+ * The {@link FlumeDeviceType} represents the possible device types returned by the Flume API.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  *

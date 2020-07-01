@@ -23,11 +23,13 @@
 				computer (https://portal.flumetech.com/), navigating to the account settings, and scrolling to the very bottom in
 				the section "API Access."</description>
 			<required>true</required>
+			<context>password</context>
 		</parameter>
 		<parameter name="clientSecret" type="text" required="false">
 			<label>Client Secret</label>
 			<description>The client secret for Flume API access; found with the client ID."</description>
 			<required>true</required>
+			<context>password</context>
 		</parameter>
 	</config-description>
 

@@ -25,9 +25,17 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 public class FlumeSensorConfiguration {
 
     /**
-     * Sample configuration parameter. Replace with your own.
+     * The long number that identifies a Flume device.
      */
     public long deviceId = MISSING_DEVICE_ID;
+
+    /**
+     * The frequency to ask for water use data updates.
+     */
     public int waterUseInterval = DEFAULT_WATER_USE_INTERVAL_MINUTES;
+
+    /**
+     * The frequency to ask for device status changes - only used for battery level.
+     */
     public int deviceStatusInterval = DEFAULT_DEVICE_STATUS_INTERVAL_MINUTES;
 }

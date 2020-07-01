@@ -71,39 +71,20 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     private volatile boolean disposed;
 
+    /** Create a new handler for a Flume water use sensor */
     public FlumeSensorHandler(Thing thing) {
         super(thing);
         disposed = true;
         logger.trace("Created handler for Flume sensor.");
     }
 
+    /**
+     * This would handle a command sent to one of the flume channels, but all channels are read only and no commands are
+     * supported. Refreshes are regularly executed by the handler and don't need to be called manually.
+     */
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (command instanceof RefreshType) {
-            if (hasConfigurationError() || disposed) {
-                logger.trace("Thing disposed, will not refresh channels!");
-                return;
-            }
-            getApiInstance();
-            FlumeAsyncHttpApi currentApi = this.asyncApi;
-            if (currentApi == null) {
-                return;
-            }
-            logger.trace("Polling for water use");
-            try {
-                DecimalType latestWaterUse = new DecimalType(
-                        currentApi.getWaterUse(config.deviceId, config.waterUseInterval).join());
-                OnOffType isWaterOn = latestWaterUse.floatValue() > 0 ? OnOffType.ON : OnOffType.OFF;
-                setBridgeOnline();
-                updateStatus(ThingStatus.ONLINE);
-                updateState(CHANNEL_USAGE, latestWaterUse);
-                updateState(CHANNEL_WATER_ON, isWaterOn);
-            } catch (CancellationException | CompletionException e) {
-                handleExceptions(e);
-            }
-        } else {
-            logger.debug("Command {} not supported.", command);
-        }
+        logger.debug("Command {} on channel {} not supported.", command, channelUID);
     }
 
     @Override
@@ -159,7 +140,9 @@ public class FlumeSensorHandler extends BaseThingHandler {
         this.deviceStatusJob = null;
     }
 
-    // Start polling for state
+    /**
+     * Start a regular job to request the most recent water use from the Flume API
+     */
     private synchronized void startwaterUseJob() {
         final ScheduledFuture<?> currentUseJob = this.waterUseJob;
         if (currentUseJob == null || currentUseJob.isCancelled()) {
@@ -192,7 +175,9 @@ public class FlumeSensorHandler extends BaseThingHandler {
         }
     }
 
-    // Start polling for state
+    /**
+     * Start a regular job to request device status from the Flume API.
+     */
     private synchronized void startdeviceStatusJob() {
         final ScheduledFuture<?> currentStatusJob = this.deviceStatusJob;
         if (currentStatusJob == null || currentStatusJob.isCancelled()) {
@@ -230,6 +215,10 @@ public class FlumeSensorHandler extends BaseThingHandler {
         }
     }
 
+    /**
+     * Translate a text battery level to the percent type needed for the system battery channel.
+     * @param batteryLevel the text battery level
+     */
     private void updateBattery(String batteryLevel) {
         switch (batteryLevel) {
             case "LOW":
@@ -246,6 +235,10 @@ public class FlumeSensorHandler extends BaseThingHandler {
         }
     }
 
+    /**
+     * Translate an exception thrown by a method into a current thing status
+     * @param e the exception that was thrown
+     */
     private void handleExceptions(Throwable e) {
         if (e instanceof CancellationException) {
             logger.warn("Flume API request attempt was canceled unexpectedly!");
@@ -270,6 +263,10 @@ public class FlumeSensorHandler extends BaseThingHandler {
         }
     }
 
+    /**
+     * Checks that the Flume sensor thing is properly tied to an account and then gets the API instance associated with
+     * that account.
+     */
     private boolean getApiInstance() {
         Bridge myAccount = this.getBridge();
         if (myAccount == null) {
@@ -287,6 +284,9 @@ public class FlumeSensorHandler extends BaseThingHandler {
         return true;
     }
 
+    /**
+     * Notifies the account that a successful call was made and thus the bridge should be set online.
+     */
     private void setBridgeOnline() {
         @Nullable
         Bridge myBridge = this.getBridge();
@@ -298,12 +298,26 @@ public class FlumeSensorHandler extends BaseThingHandler {
         }
     }
 
+    /**
+     * Checks that the thing is properly configured an online. Used to prevent thing from updating a channel
+     * inappropriately.
+     *
+     * @return True if the thing is properly configured
+     */
     private boolean hasConfigurationError() {
         ThingStatusInfo statusInfo = getThing().getStatusInfo();
         return statusInfo.getStatus() == ThingStatus.OFFLINE
                 && statusInfo.getStatusDetail() == ThingStatusDetail.CONFIGURATION_ERROR;
     }
 
+    /**
+     * Check if the binding version property of the thing matches that of the binding itself. Used to force the thing to
+     * recreate itself and all of its channels when the binding is updated. This allows channels to be updated and new
+     * channels to appear for users without forcing them to delete and recreate the things each time the binding is
+     * updated.
+     *
+     * @return True if the binding version of the thing is different from that of the binding.
+     */
     private synchronized boolean wasBindingUpdated() {
         // Check if the binding has been updated
         boolean updatedBinding = true;

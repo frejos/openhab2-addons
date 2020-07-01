@@ -56,7 +56,7 @@ public class FlumeResponseDTO<T extends FlumeDataInterface> {
     public int httpResponseCode = 400;
 
     /**
-     * Check if the request was successful and throw exceptions otherwise
+     * Check if the request was successful based on the internal success code and throw exceptions otherwise.
      *
      * @throws AuthorizationException
      * @throws IOException
@@ -104,7 +104,7 @@ public class FlumeResponseDTO<T extends FlumeDataInterface> {
      * Some errors give a text response ( "detailed": ["detials"] ) while others give the
      * expected json ( "detailed": [{"field": "badField", "message": "badMessage"}] ).
      * Because I can't know what kind of detailed response this will give, I will set
-     * the field as transient to have it ignored in all serializations.
+     * the field as transient to have it ignored in deserialization.
      */
     @SerializedName("detailed")
     public transient String @Nullable [] detailedError;
@@ -128,6 +128,8 @@ public class FlumeResponseDTO<T extends FlumeDataInterface> {
      * example if the call is limited to 300 results in the data objects. But there
      * are 500 total results. The first call would return the first 300 and a link
      * to get the next 200.
+     *
+     * @note This should always be null for us because we are never requesting many fields.
      */
     @SerializedName("pagination")
     public @Nullable FlumePaginationDTO pagination;

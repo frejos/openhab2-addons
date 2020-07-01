@@ -42,11 +42,19 @@ import org.slf4j.LoggerFactory;
 public class FlumeDiscoveryService extends AbstractDiscoveryService {
     private static final long RESCAN_INTERVAL_HOURS = 48;
     public static final Set<ThingTypeUID> DISCOVERABLE_THING_TYPES_UIDS = SUPPORTED_DEVICE_TYPES;
+
     private final Logger logger = LoggerFactory.getLogger(FlumeDiscoveryService.class);
     private @Nullable ScheduledFuture<?> discoveryJob;
     private final FlumeAccountHandler accountHandler;
     private FlumeAsyncHttpApi api;
 
+    /**
+     * Create a new discovery service for devices tied to the Flume account.
+     *
+     * @param accountHandler a handler for the Flume account
+     *
+     * @note The Flume account "bridge" MUST be created manually. It will not be discovered.
+     */
     public FlumeDiscoveryService(final FlumeAccountHandler accountHandler) {
         super(DISCOVERABLE_THING_TYPES_UIDS, 3);
         this.accountHandler = accountHandler;
