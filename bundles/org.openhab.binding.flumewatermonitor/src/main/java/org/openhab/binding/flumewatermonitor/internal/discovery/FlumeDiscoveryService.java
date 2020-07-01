@@ -14,6 +14,7 @@ package org.openhab.binding.flumewatermonitor.internal.discovery;
 
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public class FlumeDiscoveryService extends AbstractDiscoveryService {
             final ThingUID accountUid = accountHandler.getThing().getUID();
             logger.trace("Searching for Flume sensors associated with Flume account with UID {}", accountUid);
             api = accountHandler.getAsyncApi();
-            FlumeDeviceData [] deviceList = api.getAllDevices().get();
+            List<FlumeDeviceData> deviceList = api.getAllDevices().get();
             if (deviceList != null) {
                 for (final FlumeDeviceData device : deviceList) {
                     if (device != null && device.deviceId > 0 && device.deviceType == FlumeDeviceType.FlumeSensor) {
