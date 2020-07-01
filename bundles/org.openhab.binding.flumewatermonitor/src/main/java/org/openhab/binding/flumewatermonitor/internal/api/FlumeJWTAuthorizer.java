@@ -16,14 +16,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
@@ -31,6 +26,10 @@ import org.openhab.binding.flumewatermonitor.internal.config.FlumeAccountConfigu
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * The {@link FlumeJWTAuthorizer} manages the authentication process with the
@@ -51,13 +50,12 @@ public class FlumeJWTAuthorizer {
     private @Nullable FlumeJWTToken parsedToken;
     private @Nullable String refreshToken;
     private long accessTokenExpiresAt;
-    private Gson gson;
+    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
     private Boolean isAuthorized;
 
     public FlumeJWTAuthorizer(FlumeAccountHandler handler) {
         this.accountHandler = handler;
-        this.gson = accountHandler.getGson();
         logger.debug("Created a JWT authorizer for the Flume account");
         isAuthorized = false;
     }
@@ -153,50 +151,44 @@ public class FlumeJWTAuthorizer {
 
         // Split the token into its three parts
         // This will also throw a null pointer exception if the data is missing.
-        String[] tokenArray;
         String currentToken = this.accessToken;
         if (currentToken != null) {
-            tokenArray = currentToken.split("\\.");
-        }
+            String[] tokenArray = currentToken.split("\\.");
 
-        if (tokenArray.length == 3) {
-            try {
-                String tokenPayload = new String(Base64.getDecoder().decode(tokenArray[1]));
-                parsedToken = gson.fromJson(tokenPayload, FlumeJWTToken.class);
-                isAuthorized = true;
-            } catch (JsonSyntaxException e) {
-                logger.warn("Error deserializing JSON response to access token request!");
+            if (tokenArray.length == 3) {
+                try {
+                    String tokenPayload = new String(Base64.getDecoder().decode(tokenArray[1]));
+                    parsedToken = gson.fromJson(tokenPayload, FlumeJWTToken.class);
+                    isAuthorized = true;
+                } catch (JsonSyntaxException e) {
+                    logger.warn("Error deserializing JSON response to access token request!");
+                }
             }
         }
     }
 
     private CompletableFuture<@Nullable Void> sendTokenRequest(StringContentProvider content) {
-        // Create a future to complete
-        final CompletableFuture<FlumeTokenData []> future = new CompletableFuture<>();
         // Create a listener for the response
-        FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>(future, gson);
+        FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>();
+        // Creat the request
+        @Nullable
+        Request newRequest = accountHandler.createAsyncRequest("oauth/token", HttpMethod.POST, content);
 
-        try {
-            HttpClient client = accountHandler.getClient();
-            Request newRequest = client.newRequest("https://api.flumetech.com/oauth/token").method(HttpMethod.POST)
-                    .content(content).timeout(3, TimeUnit.SECONDS).header("content-type", "application/json");
-            logger.trace("Request scheme: {}", newRequest.getScheme());
-            logger.trace("Request method: {}", newRequest.getMethod());
-            logger.trace("Request host: {}", newRequest.getHost());
-            logger.trace("Request path: {}", newRequest.getPath());
-            logger.trace("Request headers: {}", newRequest.getHeaders());
-            if (newRequest.getContent() != null) {
-                logger.trace("Request content: {}", newRequest.getContent());
-            }
-            newRequest.send(listener);
-        } catch (Exception e) {
-            logger.debug("Error in sending request: {}", e.getMessage());
-            future.completeExceptionally(e);
+        if (newRequest == null) {
+            CompletableFuture<@Nullable Void> future = new CompletableFuture<>();
+            String message = "Created request was null!";
+            logger.debug(message);
+            future.completeExceptionally(new IOException(message));
+            return future;
         }
 
+        // Get the future from the listener
+        CompletableFuture<@Nullable FlumeTokenData> future = listener.getFutureSingle();
+
+        newRequest.send(listener);
+
         // Return the future
-        return future.thenApply(result -> {
-            FlumeTokenData firstEnvelope = result[0];
+        return future.thenAccept(firstEnvelope -> {
             logger.trace("Returned token envelope:  {}", firstEnvelope);
             if (firstEnvelope == null) {
                 logger.info("Returned token envelope is null");
@@ -205,7 +197,6 @@ public class FlumeJWTAuthorizer {
             } else {
                 parseTokenResponse(firstEnvelope);
             }
-            return null;
         }).exceptionally(e -> {
             logger.info("Exception in the token request future: {}", e.getMessage());
             future.completeExceptionally(new IOException(e.getMessage()));

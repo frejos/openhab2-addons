@@ -62,32 +62,29 @@ public class FlumeDiscoveryService extends AbstractDiscoveryService {
     @Override
     protected synchronized void startScan() {
         logger.debug("Start scan for Flume devices.");
-        try {
-            final ThingUID accountUid = accountHandler.getThing().getUID();
-            logger.trace("Searching for Flume sensors associated with Flume account with UID {}", accountUid);
-            api = accountHandler.getAsyncApi();
-            List<FlumeDeviceData> deviceList = api.getAllDevices().get();
-            if (deviceList != null) {
-                for (final FlumeDeviceData device : deviceList) {
-                    if (device != null && device.deviceId > 0 && device.deviceType == FlumeDeviceType.FlumeSensor) {
-                        logger.trace("Found a Flume sensor with device id {}", device.deviceId);
-                        final ThingUID deviceUid = new ThingUID(THING_TYPE_FLUME_SENSOR, accountUid,
-                                String.valueOf(device.deviceId));
-                        logger.trace("This corresponds to a thing type UID {} and a thing UID {}",
-                                THING_TYPE_FLUME_SENSOR, deviceUid);
-                        final DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(deviceUid)
-                                .withThingType(THING_TYPE_FLUME_SENSOR).withBridge(accountUid)
-                                .withProperty(CONFIG_DEVICE_ID, String.valueOf(device.deviceId))
-                                .withLabel("Flume Water Sensor")
-                                .withRepresentationProperty(String.valueOf(device.deviceId)).build();
-                        thingDiscovered(discoveryResult);
-                    }
+        final ThingUID accountUid = accountHandler.getThing().getUID();
+        logger.trace("Searching for Flume sensors associated with Flume account with UID {}", accountUid);
+        api = accountHandler.getAsyncApi();
+        @Nullable
+        FlumeDeviceData @Nullable [] deviceList = api.getAllDevices().join();
+        if (deviceList != null) {
+            for (final FlumeDeviceData device : deviceList) {
+                if (device != null && device.deviceId > 0 && device.deviceType == FlumeDeviceType.FlumeSensor) {
+                    logger.trace("Found a Flume sensor with device id {}", device.deviceId);
+                    final ThingUID deviceUid = new ThingUID(THING_TYPE_FLUME_SENSOR, accountUid,
+                            String.valueOf(device.deviceId));
+                    logger.trace("This corresponds to a thing type UID {} and a thing UID {}", THING_TYPE_FLUME_SENSOR,
+                            deviceUid);
+                    final DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(deviceUid)
+                            .withThingType(THING_TYPE_FLUME_SENSOR).withBridge(accountUid)
+                            .withProperty(CONFIG_DEVICE_ID, String.valueOf(device.deviceId))
+                            .withLabel("Flume Water Sensor").withRepresentationProperty(String.valueOf(device.deviceId))
+                            .build();
+                    thingDiscovered(discoveryResult);
                 }
             }
-        } catch (Exception ignored) {
-            logger.warn("Error getting devices for discovery: {}", ignored.getMessage());
-        } finally {
-            removeOlderResults(getTimestampOfLastScan());
+        } else {
+            logger.debug("No discovery results returned.");
         }
     }
 

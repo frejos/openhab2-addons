@@ -12,7 +12,6 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
-import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.FLUME_API_ENDPOINT;
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.FLUME_QUERY_REQUEST_ID;
 
 import java.io.IOException;
@@ -21,15 +20,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import com.google.gson.Gson;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
@@ -45,13 +39,10 @@ import org.slf4j.LoggerFactory;
 public class FlumeAsyncHttpApi {
     private final Logger logger = LoggerFactory.getLogger(FlumeAsyncHttpApi.class);
     private FlumeAccountHandler accountHandler;
-    private FlumeJWTAuthorizer authorizer;
-    private Gson gson;
+    private static final String NULL_REQUEST_NOTICE = "Created request was null!";
 
     public FlumeAsyncHttpApi(FlumeAccountHandler accountHandler) {
         this.accountHandler = accountHandler;
-        this.authorizer = accountHandler.getAuthorizer();
-        this.gson = accountHandler.getGson();
     }
 
     /**
@@ -59,21 +50,29 @@ public class FlumeAsyncHttpApi {
      *
      * @return an array of device id's
      */
-    public CompletableFuture<FlumeDeviceData []> getAllDevices() {
-        // Create the future to complete
-        final CompletableFuture<FlumeDeviceData []> future = new CompletableFuture<>();
+    public CompletableFuture<@Nullable FlumeDeviceData @Nullable []> getAllDevices() {
         // The uri this request is going to
-        String uri = "/devices";
+        String uri = "devices";
 
-        // Create a listener for the onComplete callback after the request finishes
+        // Create a listener for the response
         FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
+        // Creat the request
+        @Nullable
+        Request newRequest = accountHandler.createAuthorizedRequest(uri, HttpMethod.GET, null);
 
-        // check for authorization and then send the request
-        try {
-            sendAsyncRequest(uri, HttpMethod.GET, null, listener);
-        } catch (Exception e) {
-            future.completeExceptionally(e);
+        // If we couldn't create the requst, return a future completed exceptionally
+        if (newRequest == null) {
+            CompletableFuture<@Nullable FlumeDeviceData @Nullable []> future = new CompletableFuture<>();
+            logger.debug(NULL_REQUEST_NOTICE);
+            future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
+            return future;
         }
+
+        // Get the future from the listener
+        CompletableFuture<@Nullable FlumeDeviceData @Nullable []> future = listener.getFutureArray();
+
+        // Send the request
+        newRequest.send(listener);
 
         // Return the future
         return future;
@@ -85,34 +84,46 @@ public class FlumeAsyncHttpApi {
      * @return an array of device id's
      */
     public CompletableFuture<@Nullable FlumeDeviceData> getDevice(long deviceId) {
-        // Create the future to complete
-        final CompletableFuture<@Nullable FlumeDeviceData []> future = new CompletableFuture<>();
-
         // The uri this request is going to
-        String uri = "/devices/" + deviceId;
+        String uri = "devices/" + deviceId;
 
-        // Create a listener for the onComplete callback after the request finishes
+        // Create a listener for the response
         FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
+        // Creat the request
+        @Nullable
+        Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.GET, null);
 
-        // check for authorization and then send the request
-        try {
-            sendAsyncRequest(uri, HttpMethod.GET, null, listener);
-        } catch (Exception e) {
-            future.completeExceptionally(e);
+        // If we couldn't create the requst, return a future completed exceptionally
+        if (newRequest == null) {
+            CompletableFuture<@Nullable FlumeDeviceData> future = new CompletableFuture<>();
+            logger.debug(NULL_REQUEST_NOTICE);
+            future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
+            return future;
         }
 
+        // Get the future from the listener
+        CompletableFuture<@Nullable FlumeDeviceData> future = listener.getFutureSingle();
+
+        // Send the request
+        newRequest.send(listener);
+
         // Return the future
-        return future.thenApply(listResult -> {
-            FlumeDeviceData firstDevice = listResult[0];
+        return future.thenApply(firstDevice -> {
             logger.trace("Returned device:  {}", firstDevice);
             if (firstDevice == null) {
-                logger.debug("Returned device is null");
-                future.completeExceptionally(new IOException("Returned device is null!"));
+                logger.debug(NULL_REQUEST_NOTICE);
+                future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
+                return null;
             } else if (firstDevice.deviceType == FlumeDeviceType.FlumeBridge) {
                 logger.debug("Incorrect device type returned!  Expecting a flume sensor and got a bridge.");
                 future.completeExceptionally(new NotFoundException("Expecting a flume sensor and got a bridge!"));
+                return null;
             }
             return firstDevice;
+        }).exceptionally(e -> {
+            logger.info("Exception in the token request future: {}", e.getMessage());
+            future.completeExceptionally(new IOException(e.getMessage()));
+            return null;
         });
     }
 
@@ -122,30 +133,65 @@ public class FlumeAsyncHttpApi {
      * @return the latest water use value
      */
     public CompletableFuture<Float> getWaterUse(long deviceId, long numberMinutes) {
-        // Create the future to complete
-        final CompletableFuture<FlumeQueryValuePair []> future = new CompletableFuture<>();
         // The uri this request is going to
-        String uri = "/devices/" + deviceId + "/query";
+        String uri = "devices/" + deviceId + "/query";
 
-        // Create a listener for the onComplete callback after the request finishes
-        FlumeResponseListener<FlumeQueryValuePair> listener = new FlumeResponseListener<>();
+        // Create a listener for the response
+        FlumeResponseListener<FlumeQueryData> listener = new FlumeResponseListener<>();
+        // Creat the request
+        @Nullable
+        Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.POST,
+                createNewQueryRequestContent(numberMinutes));
 
-        // check for authorization and then send the request
-        try {
-            sendAsyncRequest(uri, HttpMethod.POST, createNewQueryRequestContent(numberMinutes), listener);
-        } catch (Exception e) {
-            future.completeExceptionally(e);
+        // If we couldn't create the requst, return a future completed exceptionally
+        if (newRequest == null) {
+            CompletableFuture<Float> future = new CompletableFuture<>();
+            logger.debug(NULL_REQUEST_NOTICE);
+            future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
+            return future;
         }
+
+        // Get the future from the listener
+        CompletableFuture<@Nullable FlumeQueryData> future = listener.getFutureSingle();
+
+        // Send the request
+        newRequest.send(listener);
+
         // Return the future
-        return future.thenApply(listResult -> {
-            FlumeQueryValuePair firstValuePair = listResult[0];
-            logger.trace("Returned value pairs:  {}", firstValuePair);
-            if (firstValuePair == null) {
-                logger.info("First returned value pair is null");
-                future.completeExceptionally(new IOException("First returned value pair is null!"));
+        return future.thenApply(firstQueryData -> {
+            logger.trace("Returned qeury data:  {}", firstQueryData);
+            if (firstQueryData == null) {
+                String message = "Returned qeury data is null";
+                logger.debug(message);
+                future.completeExceptionally(new IOException(message));
+                return (float) 0;
             }
-            logger.debug("water use: {}", firstValuePair.value);
+            @Nullable
+            FlumeQueryValuePair[] valuePairs = firstQueryData.valuePairs;
+            if (valuePairs == null) {
+                String message = "No value pairs in the query result!";
+                logger.debug(message);
+                future.completeExceptionally(new NotFoundException(message));
+                return (float) 0;
+            } else if (valuePairs.length == 0) {
+                String message = "The value pair array is empty!";
+                logger.debug(message);
+                future.completeExceptionally(new NotFoundException(message));
+                return (float) 0;
+            }
+            FlumeQueryValuePair firstValuePair = valuePairs[0];
+            if (firstValuePair == null) {
+                String message = "The first value pair is null. Weird!";
+                logger.debug(message);
+                future.completeExceptionally(new NotFoundException(message));
+                return (float) 0;
+            }
+            logger.debug("First value result: {}", firstValuePair.value);
             return firstValuePair.value;
+        }).exceptionally(e -> {
+            logger.info("Exception in the token request future: {}", e.getMessage());
+            future.completeExceptionally(new IOException(e.getMessage()));
+            return (float) 0;
         });
     }
 
@@ -170,39 +216,5 @@ public class FlumeAsyncHttpApi {
                 + ",\"operation\":\"SUM\",\"sort_direction\":\"ASC\"}]}";
         logger.trace("Water use query request content: {}", requestBody);
         return new StringContentProvider(requestBody, StandardCharsets.UTF_8);
-    }
-
-    private void sendAsyncRequest(String uri, HttpMethod method, @Nullable StringContentProvider content,
-            BufferingResponseListener listener) {
-        // check for authorization and then send the request
-        authorizer.isAuthorized().thenAccept(authResult -> {
-            if (authResult) {
-                long userId = authorizer.getUserId();
-                String url = FLUME_API_ENDPOINT + userId + uri;
-                logger.debug("Making request to {} with method type {} and content {}", url, method, content);
-                try { // Create the request
-                    HttpClient client = accountHandler.getClient();
-                    Request newRequest = client.newRequest(url).method(method).timeout(3, TimeUnit.SECONDS)
-                            .header("authorization", "Bearer " + authorizer.getAccessToken())
-                            .header("content-type", "application/json");
-                    // Add content, if it exists
-                    if (content != null) {
-                        newRequest.content(content);
-                    }
-                    logger.trace("Request scheme: {}", newRequest.getScheme());
-                    logger.trace("Request method: {}", newRequest.getMethod());
-                    logger.trace("Request host: {}", newRequest.getHost());
-                    logger.trace("Request path: {}", newRequest.getPath());
-                    logger.trace("Request headers: {}", newRequest.getHeaders());
-                    if (newRequest.getContent() != null) {
-                        logger.trace("Request content: {}", newRequest.getContent());
-                    }
-                    // Send the request with the listener attached
-                    newRequest.send(listener);
-                } catch (Exception e) {
-                    logger.error("Unable to send request: {}", e.getMessage());
-                }
-            }
-        });
     }
 }

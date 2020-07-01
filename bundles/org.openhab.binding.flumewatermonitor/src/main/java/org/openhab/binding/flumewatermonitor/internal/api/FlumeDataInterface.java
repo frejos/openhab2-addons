@@ -12,24 +12,13 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
-import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-
-import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link FlumeQueryData} represents the date-time value pairs returned by a data query.
+ * The {@link FlumeDataInterface} represents the "data" returned by a data query.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class FlumeQueryData implements FlumeDataInterface {
-
-    /**
-     * The value-pair results
-     */
-    @SerializedName(FLUME_QUERY_REQUEST_ID)
-    public FlumeQueryValuePair @Nullable [] valuePairs;
+public interface FlumeDataInterface {
 }

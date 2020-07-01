@@ -28,7 +28,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class FlumeWaterMonitorBindingConstants {
 
     private static final String BINDING_ID = "flumewatermonitor";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.17";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.19";
 
     // List of all Thing Type UIDs
     /**
@@ -127,7 +127,7 @@ public class FlumeWaterMonitorBindingConstants {
     /**
      * The endpoint for all API calls (except for authentication),
      */
-    public static final String FLUME_API_ENDPOINT = "https://api.flumetech.com/users/";
+    public static final String FLUME_API_ENDPOINT = "https://api.flumetech.com/";
 
     // -------------- Device Properties ----------------
 

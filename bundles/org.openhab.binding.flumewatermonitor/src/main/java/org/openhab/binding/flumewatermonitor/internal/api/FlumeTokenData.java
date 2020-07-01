@@ -25,7 +25,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class FlumeTokenData {
+public class FlumeTokenData implements FlumeDataInterface {
 
     /**
      * The type of token - should always be "bearer".

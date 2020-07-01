@@ -29,7 +29,7 @@ import com.google.gson.annotations.SerializedName;
  */
 
 @NonNullByDefault
-public class FlumeDeviceData {
+public class FlumeDeviceData implements FlumeDataInterface {
 
     /**
      * The type of token - should always be "bearer".

@@ -27,7 +27,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class FlumeResponseDTO<T> {
+public class FlumeResponseDTO<T extends FlumeDataInterface> {
 
     private final Logger logger = LoggerFactory.getLogger(FlumeResponseDTO.class);
 

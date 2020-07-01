@@ -16,15 +16,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * {@link FlumeResponseListener} listens for async http responses
@@ -33,25 +34,27 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 
-public class FlumeResponseListener<T> extends BufferingResponseListener {
+public class FlumeResponseListener<T extends FlumeDataInterface> extends BufferingResponseListener {
     private final Logger logger = LoggerFactory.getLogger(FlumeResponseListener.class);
 
-    private CompletableFuture<T []> future;
-    private Gson gson;
+    private CompletableFuture<@Nullable T @Nullable []> future;
+    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
-    FlumeResponseListener(CompletableFuture<T []> future, Gson gson){
-        this.gson = gson;
-        this.future = future;
-
+    public FlumeResponseListener() {
+        this.future = new CompletableFuture<>();
     }
-    public CompletableFuture<T []> getFutureList() {
+
+    public CompletableFuture<@Nullable T @Nullable []> getFutureArray() {
         return this.future;
     }
 
-    public CompletableFuture<T> getFutureSingle() {
-        CompletableFuture<T> newFuture;
-        newFuture = this.future.thenApply(result -> {
+    public CompletableFuture<@Nullable T> getFutureSingle() {
+        return this.future.thenApply(result -> {
+            if (result != null) {
                 return result[0];
+            } else {
+                return null;
+            }
         }).exceptionally(e -> {
             logger.debug("Exception in Flume response listener: {}", e.getMessage());
             if (e.getCause() != null) {
@@ -59,7 +62,6 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
             }
             return null;
         });
-        return newFuture;
     }
 
     // Create a listener for the onComplete callback after the request finishes
@@ -95,7 +97,8 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
             dto.checkForExceptions();
 
             // Try to extract the usage data from the response.
-            T[] resultDatas = dto.dataResults;
+            @Nullable
+            T @Nullable [] resultDatas = dto.dataResults;
             if (resultDatas == null) {
                 throw new IOException("No result data returned in the response");
             }
@@ -109,7 +112,7 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
                     logger.trace("Result {}:  {}", i, resultDatas[i]);
                 } else {
                     logger.trace("Result {} is null!", i);
-                    throw new IOException("Malformed array, result "+i+" is null");
+                    throw new IOException("Malformed array, result " + i + " is null");
                 }
             }
             future.complete(resultDatas);

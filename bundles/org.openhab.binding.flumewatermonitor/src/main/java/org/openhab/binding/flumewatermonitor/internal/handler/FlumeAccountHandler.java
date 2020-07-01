@@ -12,13 +12,19 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.handler;
 
+import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.FLUME_API_ENDPOINT;
+
 import java.io.IOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -32,9 +38,6 @@ import org.openhab.binding.flumewatermonitor.internal.api.FlumeJWTAuthorizer;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeAccountConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * The {@link FlumeAccountHandler} is responsible for handling commands, which
@@ -53,8 +56,6 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
 
     private final FlumeJWTAuthorizer authorizer;
     private final FlumeAsyncHttpApi asyncApi;
-
-    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
     private final HttpClient client = new HttpClient(new SslContextFactory());
 
@@ -84,15 +85,11 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         // Example for background initialization:
         scheduler.execute(() -> {
             try {
-                authorizer.isAuthorized().get();
+                authorizer.isAuthorized().join();
                 updateStatus(ThingStatus.ONLINE);
             } catch (CancellationException e) {
                 logger.warn("Authorization attempt was canceled unexpectedly!");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-            } catch (InterruptedException e) {
-                logger.warn("Authorization attempt was interrupted before completion!");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-            } catch (ExecutionException | CompletionException e) {
+            } catch (CompletionException e) {
                 if (e.getCause() instanceof AuthorizationException) {
                     applyAuthorizationError(e.getMessage());
                 } else {
@@ -112,15 +109,6 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
         return config;
     }
 
-    /**
-     * Get the gson to parse JSON
-     *
-     * @return A Gson object
-     */
-    public Gson getGson() {
-        return gson;
-    }
-
     public HttpClient getClient() throws Exception {
         if (!client.isStarted()) {
             try {
@@ -132,10 +120,6 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
             }
         }
         return this.client;
-    }
-
-    public FlumeJWTAuthorizer getAuthorizer() {
-        return this.authorizer;
     }
 
     public FlumeAsyncHttpApi getAsyncApi() {
@@ -150,5 +134,65 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
     public void setAccountOnline() {
         logger.debug("Account handler notified of successful request - it must be online.");
         updateStatus(ThingStatus.ONLINE);
+    }
+
+    public @Nullable Request createAsyncRequest(String uri, HttpMethod method,
+            @Nullable StringContentProvider content) {
+        String url = FLUME_API_ENDPOINT + uri;
+        logger.debug("Creating request to {} with method type {} and content {}", uri, method, content);
+        try { // Create the request
+            HttpClient outClient = getClient();
+            Request newRequest = outClient.newRequest(url).method(method).timeout(3, TimeUnit.SECONDS)
+                    .header("content-type", "application/json");
+            // Add content, if it exists
+            if (content != null) {
+                newRequest.content(content);
+            }
+            logger.trace("Request scheme: {}", newRequest.getScheme());
+            logger.trace("Request method: {}", newRequest.getMethod());
+            logger.trace("Request host: {}", newRequest.getHost());
+            logger.trace("Request path: {}", newRequest.getPath());
+            logger.trace("Request headers: {}", newRequest.getHeaders());
+            if (newRequest.getContent() != null) {
+                logger.trace("Request content: {}", newRequest.getContent());
+            }
+            return newRequest;
+        } catch (Exception e) {
+            logger.error("Unable to create client for request: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public @Nullable Request createAuthorizedRequest(String uri, HttpMethod method,
+            @Nullable StringContentProvider content) {
+        logger.trace("Confirming authorization before creating request");
+        boolean authResult = false;
+        try {
+            authResult = authorizer.isAuthorized().join();
+            updateStatus(ThingStatus.ONLINE);
+        } catch (CancellationException e) {
+            logger.warn("Authorization attempt was canceled unexpectedly!");
+            return null;
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof AuthorizationException) {
+                applyAuthorizationError(e.getMessage());
+            } else {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getCause().getMessage());
+            }
+            return null;
+        }
+        // check for authorization and then send the request
+        if (authResult) {
+            long userId = authorizer.getUserId();
+            String url = FLUME_API_ENDPOINT + "users/" + userId + uri;
+            logger.debug("Creating request with authorization to {} with method type {} and content {}", uri, method,
+                    content);
+            Request newRequest = createAsyncRequest(url, method, content);
+            if (newRequest != null) {
+                newRequest.header("authorization", "Bearer " + authorizer.getAccessToken());
+                return newRequest;
+            }
+        }
+        return null;
     }
 }

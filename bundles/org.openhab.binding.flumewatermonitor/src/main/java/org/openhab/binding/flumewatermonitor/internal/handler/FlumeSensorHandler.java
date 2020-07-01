@@ -92,13 +92,13 @@ public class FlumeSensorHandler extends BaseThingHandler {
             logger.trace("Polling for water use");
             try {
                 DecimalType latestWaterUse = new DecimalType(
-                        currentApi.getWaterUse(config.deviceId, config.waterUseInterval).get());
+                        currentApi.getWaterUse(config.deviceId, config.waterUseInterval).join());
                 OnOffType isWaterOn = latestWaterUse.floatValue() > 0 ? OnOffType.ON : OnOffType.OFF;
                 setBridgeOnline();
                 updateStatus(ThingStatus.ONLINE);
                 updateState(CHANNEL_USAGE, latestWaterUse);
                 updateState(CHANNEL_WATER_ON, isWaterOn);
-            } catch (Exception e) {
+            } catch (CancellationException | CompletionException e) {
                 handleExceptions(e);
             }
         } else {
@@ -176,13 +176,13 @@ public class FlumeSensorHandler extends BaseThingHandler {
                 logger.trace("Polling for water use");
                 try {
                     DecimalType latestWaterUse = new DecimalType(
-                            currentApi.getWaterUse(config.deviceId, config.waterUseInterval).get());
+                            currentApi.getWaterUse(config.deviceId, config.waterUseInterval).join());
                     OnOffType isWaterOn = latestWaterUse.floatValue() > 0 ? OnOffType.ON : OnOffType.OFF;
                     setBridgeOnline();
                     updateStatus(ThingStatus.ONLINE);
                     updateState(CHANNEL_USAGE, latestWaterUse);
                     updateState(CHANNEL_WATER_ON, isWaterOn);
-                } catch (Exception e) {
+                } catch (CancellationException | CompletionException e) {
                     handleExceptions(e);
                 }
             };
@@ -208,17 +208,19 @@ public class FlumeSensorHandler extends BaseThingHandler {
                 }
                 logger.trace("Polling for current state for {} ({})", config.deviceId, this.getThing().getLabel());
                 try {
-                    FlumeDeviceData deviceState = currentApi.getDevice(config.deviceId).get();
+                    FlumeDeviceData deviceState = currentApi.getDevice(config.deviceId).join();
                     updateStatus(ThingStatus.ONLINE);
-                    String battLevel = deviceState.batteryLevel;
-                    if (battLevel == null) {
-                        logger.info("No battery information in the device response!");
-                        return;
-                    } else {
-                        updateBattery(battLevel);
-                        return;
+                    if (deviceState != null) {
+                        String battLevel = deviceState.batteryLevel;
+                        if (battLevel == null) {
+                            logger.info("No battery information in the device response!");
+                            return;
+                        } else {
+                            updateBattery(battLevel);
+                            return;
+                        }
                     }
-                } catch (Exception e) {
+                } catch (CancellationException | CompletionException e) {
                     handleExceptions(e);
                 }
             };
@@ -247,8 +249,6 @@ public class FlumeSensorHandler extends BaseThingHandler {
     private void handleExceptions(Throwable e) {
         if (e instanceof CancellationException) {
             logger.warn("Flume API request attempt was canceled unexpectedly!");
-        } else if (e instanceof InterruptedException) {
-            logger.warn("Flume API request attempt was interrupted before completion!");
         } else if (e instanceof ExecutionException || e instanceof CompletionException) {
             if (e.getCause() instanceof AuthorizationException) {
                 logger.warn("Flume API request attempt resulted in an authorization error!");
