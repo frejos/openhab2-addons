@@ -19,7 +19,7 @@
 /bundles/org.openhab.binding.avmfritz/ @cweitkamp
 /bundles/org.openhab.binding.bigassfan/ @mhilbush
 /bundles/org.openhab.binding.bluetooth/ @cdjackson @kaikreuzer
-/bundles/org.openhab.binding.bluetooth.airthings/ @paulianttila 
+/bundles/org.openhab.binding.bluetooth.airthings/ @paulianttila
 /bundles/org.openhab.binding.bluetooth.am43/ @cpmeister
 /bundles/org.openhab.binding.bluetooth.bluegiga/ @cdjackson @kaikreuzer
 /bundles/org.openhab.binding.bluetooth.bluez/ @cdjackson @kaikreuzer
@@ -60,6 +60,7 @@
 /bundles/org.openhab.binding.exec/ @kgoderis
 /bundles/org.openhab.binding.feed/ @svilenvul
 /bundles/org.openhab.binding.feican/ @Hilbrand
+/bundles/org.openhab.binding.flumewatermonitor/ @SRGDamia1
 /bundles/org.openhab.binding.fmiweather/ @ssalonen
 /bundles/org.openhab.binding.folding/ @fa2k
 /bundles/org.openhab.binding.foobot/ @airboxlab @Hilbrand
