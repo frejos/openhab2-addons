@@ -216,7 +216,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     /**
      * Translate a text battery level to the percent type needed for the system battery channel.
-     * 
+     *
      * @param batteryLevel the text battery level
      */
     private void updateBattery(String batteryLevel) {
@@ -237,7 +237,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     /**
      * Translate an exception thrown by a method into a current thing status
-     * 
+     *
      * @param e the exception that was thrown
      */
     private void handleExceptions(Throwable e) {

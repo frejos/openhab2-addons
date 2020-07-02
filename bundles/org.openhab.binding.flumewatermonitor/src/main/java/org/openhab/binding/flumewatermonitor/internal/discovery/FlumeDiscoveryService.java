@@ -14,7 +14,6 @@ package org.openhab.binding.flumewatermonitor.internal.discovery;
 
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
