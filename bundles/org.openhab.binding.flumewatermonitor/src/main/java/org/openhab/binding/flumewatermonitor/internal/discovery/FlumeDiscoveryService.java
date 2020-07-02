@@ -73,11 +73,10 @@ public class FlumeDiscoveryService extends AbstractDiscoveryService {
         final ThingUID accountUid = accountHandler.getThing().getUID();
         logger.trace("Searching for Flume sensors associated with Flume account with UID {}", accountUid);
         api = accountHandler.getAsyncApi();
-        @Nullable
-        FlumeDeviceData @Nullable [] deviceList = api.getAllDevices().join();
-        if (deviceList != null) {
+        FlumeDeviceData[] deviceList = api.getAllDevices().join();
+        if (deviceList.length > 0) {
             for (final FlumeDeviceData device : deviceList) {
-                if (device != null && device.deviceId > 0 && device.deviceType == FlumeDeviceType.FlumeSensor) {
+                if (device.deviceId > 0 && device.deviceType == FlumeDeviceType.FlumeSensor) {
                     logger.trace("Found a Flume sensor with device id {}", device.deviceId);
                     final ThingUID deviceUid = new ThingUID(THING_TYPE_FLUME_SENSOR, accountUid,
                             String.valueOf(device.deviceId));

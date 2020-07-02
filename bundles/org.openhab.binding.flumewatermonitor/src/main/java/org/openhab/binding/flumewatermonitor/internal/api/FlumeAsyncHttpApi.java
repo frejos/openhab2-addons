@@ -53,26 +53,28 @@ public class FlumeAsyncHttpApi {
      *
      * @return an array of device id's
      */
-    public CompletableFuture<@Nullable FlumeDeviceData @Nullable []> getAllDevices() {
+    public CompletableFuture<FlumeDeviceData[]> getAllDevices() {
         // The uri this request is going to
         String uri = "devices";
 
         // Create a listener for the response
         FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
-        // Creat the request
+        // Create the request
         @Nullable
         Request newRequest = accountHandler.createAuthorizedRequest(uri, HttpMethod.GET, null);
 
         // If we couldn't create the requst, return a future completed exceptionally
+        // @note - In the raw json, everything can be null, but the onComplete function that completes this future will
+        // not complete regularly if there are unexpected nulls. So here we can know that the fields are non-null.
         if (newRequest == null) {
-            CompletableFuture<@Nullable FlumeDeviceData @Nullable []> future = new CompletableFuture<>();
+            CompletableFuture<FlumeDeviceData[]> future = new CompletableFuture<>();
             logger.debug(NULL_REQUEST_NOTICE);
             future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
             return future;
         }
 
         // Get the future from the listener
-        CompletableFuture<@Nullable FlumeDeviceData @Nullable []> future = listener.getFutureArray();
+        CompletableFuture<FlumeDeviceData[]> future = listener.getFutureArray();
 
         // Send the request
         newRequest.send(listener);
@@ -92,7 +94,7 @@ public class FlumeAsyncHttpApi {
 
         // Create a listener for the response
         FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
-        // Creat the request
+        // Create the request
         @Nullable
         Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.GET, null);
 
@@ -105,6 +107,7 @@ public class FlumeAsyncHttpApi {
         }
 
         // Get the future from the listener
+        // We should only get one device back here, so we'll just ask for the first one.
         CompletableFuture<@Nullable FlumeDeviceData> future = listener.getFutureSingle();
 
         // Send the request
@@ -118,7 +121,7 @@ public class FlumeAsyncHttpApi {
                 future.completeExceptionally(new IOException(NULL_REQUEST_NOTICE));
                 return null;
             } else if (firstDevice.deviceType == FlumeDeviceType.FlumeBridge) {
-                logger.debug("Incorrect device type returned!  Expecting a flume sensor and got a bridge.");
+                logger.warn("Incorrect device type returned!  Expecting a flume sensor and got a bridge.");
                 future.completeExceptionally(new NotFoundException("Expecting a flume sensor and got a bridge!"));
                 return null;
             }
@@ -141,7 +144,7 @@ public class FlumeAsyncHttpApi {
 
         // Create a listener for the response
         FlumeResponseListener<FlumeQueryData> listener = new FlumeResponseListener<>();
-        // Creat the request
+        // Create the request
         @Nullable
         Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.POST,
                 createNewQueryRequestContent(numberMinutes));
@@ -155,6 +158,7 @@ public class FlumeAsyncHttpApi {
         }
 
         // Get the future from the listener
+        // We should only get one device back here, so we'll just ask for the first one.
         CompletableFuture<@Nullable FlumeQueryData> future = listener.getFutureSingle();
 
         // Send the request

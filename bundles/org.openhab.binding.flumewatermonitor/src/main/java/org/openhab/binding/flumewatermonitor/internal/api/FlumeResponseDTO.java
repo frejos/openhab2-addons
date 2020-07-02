@@ -19,6 +19,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -27,7 +28,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class FlumeResponseDTO<T extends FlumeDataInterface> {
+public class FlumeResponseDTO {
 
     private final Logger logger = LoggerFactory.getLogger(FlumeResponseDTO.class);
 
@@ -103,17 +104,28 @@ public class FlumeResponseDTO<T extends FlumeDataInterface> {
      * Unfortunately, the structure of this field is inconsistent depending on the error.
      * Some errors give a text response ( "detailed": ["detials"] ) while others give the
      * expected json ( "detailed": [{"field": "badField", "message": "badMessage"}] ).
-     * Because I can't know what kind of detailed response this will give, I will set
-     * the field as transient to have it ignored in deserialization.
+     * Because I can't know what kind of detailed response this will give, I am deserializing
+     * it as a raw String containing the json with the message (if any).
      */
     @SerializedName("detailed")
-    public transient String @Nullable [] detailedError;
+    @JsonAdapter(RawJsonGsonAdapter.class)
+    public @Nullable String detailedErrorAsString;
 
     /**
-     * The data portion of the response. This may either be an empty array or a simple null.
+     * The data portion of the response. If there is an error, this may be missing, a simple null ( "data": null) or an
+     * empty array ( "data": [] ). When present, the structure of the data field depends on the type of request made.
+     *
+     * While I would prefer to make the response DTO a generic class and make use of the GSON TypeToken functionality to
+     * deserialize the DTO, because it's all nullable the TypeToken can't figure out what to do and hangs. To get around
+     * this, I'm leaving this field as a string that will have to be deserialized in a second step with the proper class
+     * type.
+     *
+     * // public class FlumeResponseDTO<T> {
+     * // public T [] dataResults;
      */
     @SerializedName("data")
-    public @Nullable T @Nullable [] dataResults;
+    @JsonAdapter(RawJsonGsonAdapter.class)
+    public @Nullable String dataAsString;
 
     /**
      * The count field contains the total amount of records in existence for the

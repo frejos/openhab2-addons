@@ -37,10 +37,13 @@ import com.google.gson.reflect.TypeToken;
  */
 @NonNullByDefault
 
-public class FlumeResponseListener<T extends FlumeDataInterface> extends BufferingResponseListener {
+public class FlumeResponseListener<T> extends BufferingResponseListener {
     private final Logger logger = LoggerFactory.getLogger(FlumeResponseListener.class);
 
-    private CompletableFuture<@Nullable T @Nullable []> future;
+    // @note - in the raw json, everything can be null, but the onComplete function that completes this future will not
+    // complete regularly if there are unexpected nulls. So here we can know that the fields are non-null.
+    private CompletableFuture<T[]> future;
+
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
     /**
@@ -53,27 +56,26 @@ public class FlumeResponseListener<T extends FlumeDataInterface> extends Bufferi
     /**
      * Get a future which will complete with the full array of data subtypes.
      *
+     * @note - In the raw json, everything can be null, but the onComplete function that completes this future will not
+     *       complete regularly if there are unexpected nulls. So here we can know that the fields are non-null.
+     *
      * @return A completable future which will resovlve to the array of data subtypes or null they aren't present in the
      *         response.
      */
-    public CompletableFuture<@Nullable T @Nullable []> getFutureArray() {
+    public CompletableFuture<T[]> getFutureArray() {
         return this.future;
     }
 
     /**
      * Get a future which will complete with the first item of the array of data subtypes or null if none are present.
      *
+     * @note - This CAN complete to null!
+     *
      * @return A completable future which will resovlve to first item in the array of data subtypes or null none are
      *         present in the response.
      */
     public CompletableFuture<@Nullable T> getFutureSingle() {
-        return this.future.thenApply(result -> {
-            if (result != null) {
-                return result[0];
-            } else {
-                return null;
-            }
-        }).exceptionally(e -> {
+        return this.future.thenApply(result -> result[0]).exceptionally(e -> {
             logger.debug("Exception in Flume response listener: {}", e.getMessage());
             if (e.getCause() != null) {
                 logger.debug("Inner Exception: {}", e.getCause().getMessage());
@@ -109,34 +111,39 @@ public class FlumeResponseListener<T extends FlumeDataInterface> extends Bufferi
 
             // Parse the JSON response
             @Nullable
-            FlumeResponseDTO<T> dto = gson.fromJson(jsonResponse, new TypeToken<FlumeResponseDTO<T>>() {
-            }.getType());
+            FlumeResponseDTO dto = gson.fromJson(jsonResponse, FlumeResponseDTO.class);
             if (dto == null) {
                 throw new IOException("No DTO could be parsed from JSON");
             }
+            // Check if the response had an internal success field and throw a bunch of exceptions if not.
             dto.checkForExceptions();
 
             // Try to extract the usage data from the response.
             @Nullable
-            T @Nullable [] resultDatas = dto.dataResults;
-            if (resultDatas == null) {
+            String resultDataString = dto.dataAsString;
+            if (resultDataString == null) {
                 throw new IOException("No result data returned in the response");
             }
+            T @Nullable [] arrayOfDatas = gson.fromJson(resultDataString, new TypeToken<T[]>() {
+            }.getType());
+
             // Try to extract the device data from the response.
-            if (resultDatas.length == 0) {
+            if (arrayOfDatas.length == 0) {
                 throw new IOException("No results in the array!");
             }
-            logger.trace("{} result[s] returned", resultDatas.length);
-            for (int i = 0; i < resultDatas.length; i++) {
-                if (resultDatas[i] != null) {
-                    logger.trace("Result {}:  {}", i, resultDatas[i]);
+            logger.trace("{} result[s] returned", arrayOfDatas.length);
+            for (int i = 0; i < arrayOfDatas.length; i++) {
+                if (arrayOfDatas[i] != null) {
+                    logger.trace("Result {}:  {}", i, arrayOfDatas[i]);
                 } else {
+                    // If the data field is present in the json, and it's not an empty array,
+                    // there should not be any null fields in the array.
                     logger.trace("Result {} is null!", i);
                     throw new IOException("Malformed array, result " + i + " is null");
                 }
             }
-            future.complete(resultDatas);
-        } catch (AuthorizationException | NotFoundException | IOException e) {
+            future.complete(arrayOfDatas);
+        } catch (AuthorizationException | NotFoundException | IOException | RuntimeException e) {
             logger.debug("Exception in Flume response listener: {}", e.getMessage());
             if (e.getCause() != null) {
                 logger.debug("Inner Exception: {}", e.getCause().getMessage());

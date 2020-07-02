@@ -40,7 +40,6 @@ import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
-import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.flumewatermonitor.internal.api.AuthorizationException;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceData;
@@ -217,6 +216,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     /**
      * Translate a text battery level to the percent type needed for the system battery channel.
+     * 
      * @param batteryLevel the text battery level
      */
     private void updateBattery(String batteryLevel) {
@@ -237,6 +237,7 @@ public class FlumeSensorHandler extends BaseThingHandler {
 
     /**
      * Translate an exception thrown by a method into a current thing status
+     * 
      * @param e the exception that was thrown
      */
     private void handleExceptions(Throwable e) {

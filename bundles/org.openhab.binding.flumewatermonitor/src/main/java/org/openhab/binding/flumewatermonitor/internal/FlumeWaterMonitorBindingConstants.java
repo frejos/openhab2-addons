@@ -28,7 +28,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 public class FlumeWaterMonitorBindingConstants {
 
     private static final String BINDING_ID = "flumewatermonitor";
-    public static final String CURRENT_BINDING_VERSION = "v0.01.19";
+    public static final String CURRENT_BINDING_VERSION = "v0.01.20";
 
     // List of all Thing Type UIDs
     /**

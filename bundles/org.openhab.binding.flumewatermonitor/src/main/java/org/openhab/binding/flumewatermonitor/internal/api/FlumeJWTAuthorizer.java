@@ -187,7 +187,7 @@ public class FlumeJWTAuthorizer {
     private CompletableFuture<@Nullable Void> sendTokenRequest(StringContentProvider content) {
         // Create a listener for the response
         FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>();
-        // Creat the request
+        // Create the request
         @Nullable
         Request newRequest = accountHandler.createAsyncRequest("oauth/token", HttpMethod.POST, content);
 
@@ -200,6 +200,7 @@ public class FlumeJWTAuthorizer {
         }
 
         // Get the future from the listener
+        // We should only get one token envelope back, so we'll just ask for the first one.
         CompletableFuture<@Nullable FlumeTokenData> future = listener.getFutureSingle();
 
         newRequest.send(listener);
