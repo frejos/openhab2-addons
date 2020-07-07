@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.flumewatermonitor.internal.api;
+package org.openhab.binding.flumewatermonitor.internal.model;
 
 import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
 
@@ -29,14 +29,14 @@ import com.google.gson.annotations.SerializedName;
 @NonNullByDefault
 public enum FlumeDeviceType {
     @SerializedName("1")
-    FlumeBridge(1, THING_TYPE_FLUME_BRIDGE),
+    FlumeBridge(THING_TYPE_FLUME_BRIDGE),
 
     @SerializedName("2")
-    FlumeSensor(2, THING_TYPE_FLUME_SENSOR);
+    FlumeSensor(THING_TYPE_FLUME_SENSOR);
 
     private ThingTypeUID deviceTypeUid;
 
-    private FlumeDeviceType(final int apiValue, final ThingTypeUID deviceTypeUid) {
+    private FlumeDeviceType(final ThingTypeUID deviceTypeUid) {
         this.deviceTypeUid = deviceTypeUid;
     }
 

@@ -40,11 +40,11 @@ import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.flumewatermonitor.internal.api.AuthorizationException;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
-import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceData;
-import org.openhab.binding.flumewatermonitor.internal.api.NotFoundException;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeSensorConfiguration;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.AuthorizationException;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.NotFoundException;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeDeviceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

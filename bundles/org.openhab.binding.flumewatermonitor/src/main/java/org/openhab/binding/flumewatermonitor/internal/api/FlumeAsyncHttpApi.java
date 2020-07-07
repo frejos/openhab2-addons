@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.flumewatermonitor.internal.api;
 
-import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.FLUME_QUERY_REQUEST_ID;
+import static org.openhab.binding.flumewatermonitor.internal.FlumeWaterMonitorBindingConstants.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +26,12 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.NotFoundException;
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeDeviceData;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeDeviceType;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeQueryData;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeQueryValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +60,10 @@ public class FlumeAsyncHttpApi {
      */
     public CompletableFuture<FlumeDeviceData[]> getAllDevices() {
         // The uri this request is going to
-        String uri = "devices";
+        String uri = "/devices";
 
         // Create a listener for the response
-        FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
+        FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>(FlumeDeviceData[].class);
         // Create the request
         @Nullable
         Request newRequest = accountHandler.createAuthorizedRequest(uri, HttpMethod.GET, null);
@@ -90,13 +95,13 @@ public class FlumeAsyncHttpApi {
      */
     public CompletableFuture<@Nullable FlumeDeviceData> getDevice(long deviceId) {
         // The uri this request is going to
-        String uri = "devices/" + deviceId;
+        String uri = "/devices/" + deviceId;
 
         // Create a listener for the response
-        FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>();
+        FlumeResponseListener<FlumeDeviceData> listener = new FlumeResponseListener<>(FlumeDeviceData[].class);
         // Create the request
         @Nullable
-        Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.GET, null);
+        Request newRequest = accountHandler.createAuthorizedRequest(uri, HttpMethod.GET, null);
 
         // If we couldn't create the requst, return a future completed exceptionally
         if (newRequest == null) {
@@ -140,13 +145,13 @@ public class FlumeAsyncHttpApi {
      */
     public CompletableFuture<Float> getWaterUse(long deviceId, long numberMinutes) {
         // The uri this request is going to
-        String uri = "devices/" + deviceId + "/query";
+        String uri = "/devices/" + deviceId + "/query";
 
         // Create a listener for the response
-        FlumeResponseListener<FlumeQueryData> listener = new FlumeResponseListener<>();
+        FlumeResponseListener<FlumeQueryData> listener = new FlumeResponseListener<>(FlumeQueryData[].class);
         // Create the request
         @Nullable
-        Request newRequest = accountHandler.createAsyncRequest(uri, HttpMethod.POST,
+        Request newRequest = accountHandler.createAuthorizedRequest(uri, HttpMethod.POST,
                 createNewQueryRequestContent(numberMinutes));
 
         // If we couldn't create the requst, return a future completed exceptionally
@@ -212,10 +217,10 @@ public class FlumeAsyncHttpApi {
         // Round down to avoid having issues between the server times which lead to the other server rejecting the
         // request for having an apparently in the starting future timestamp
         LocalDateTime startTime = LocalDateTime.now().minusMinutes(numberMinutes).truncatedTo(ChronoUnit.MINUTES);
-        String startTimeString = startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:MM:SS"));
+        String startTimeString = startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         // End time - this is optional in the request
         LocalDateTime endTime = LocalDateTime.now();
-        String endTimeString = endTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:MM:SS"));
+        String endTimeString = endTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         String requestBody = "{\"queries\":[{\"request_id\":\"" + FLUME_QUERY_REQUEST_ID + "\",\"since_datetime\":\""
                 + startTimeString + "\",\"until_datetime\":\"" + endTimeString

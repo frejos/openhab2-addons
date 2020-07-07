@@ -92,7 +92,7 @@ public class FlumeHandlerFactory extends BaseThingHandlerFactory {
     private synchronized void registerDeviceDiscoveryService(FlumeAccountHandler bridgeHandler) {
         logger.trace("Registering a discovery service for the Flume account.");
         FlumeDiscoveryService discoveryService = new FlumeDiscoveryService(bridgeHandler);
-        discoveryServiceRegs.put(bridgeHandler.getThing().getUID(), bundleContext
-                .registerService(DiscoveryService.class.getName(), discoveryService, new Hashtable<String, Object>()));
+        discoveryServiceRegs.put(bridgeHandler.getThing().getUID(),
+                bundleContext.registerService(DiscoveryService.class.getName(), discoveryService, new Hashtable<>()));
     }
 }

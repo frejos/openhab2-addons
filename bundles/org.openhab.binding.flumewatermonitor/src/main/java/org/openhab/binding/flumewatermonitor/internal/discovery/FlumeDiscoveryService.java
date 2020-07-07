@@ -26,9 +26,9 @@ import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
-import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceData;
-import org.openhab.binding.flumewatermonitor.internal.api.FlumeDeviceType;
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeDeviceData;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeDeviceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

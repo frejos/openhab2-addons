@@ -10,15 +10,24 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.flumewatermonitor.internal.api;
+package org.openhab.binding.flumewatermonitor.internal.exceptions;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link FlumeDataInterface} represents the "data" returned by a data query.
+ * The {@link AuthorizationException} is thrown whenever account authorization
+ * fails.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public interface FlumeDataInterface {
+public class AuthorizationException extends Exception {
+    private static final long serialVersionUID = 3630924933867280491L;
+
+    public AuthorizationException() {
+    }
+
+    public AuthorizationException(String message) {
+        super(message);
+    }
 }

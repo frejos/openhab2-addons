@@ -10,12 +10,14 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.flumewatermonitor.internal.api;
+package org.openhab.binding.flumewatermonitor.internal.model;
 
 import java.io.IOException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.AuthorizationException;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,7 @@ import com.google.gson.annotations.SerializedName;
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
+@JsonAdapter(FlumeResponseDeserializer.class)
 @NonNullByDefault
 public class FlumeResponseDTO {
 
@@ -108,7 +111,6 @@ public class FlumeResponseDTO {
      * it as a raw String containing the json with the message (if any).
      */
     @SerializedName("detailed")
-    @JsonAdapter(RawJsonGsonAdapter.class)
     public @Nullable String detailedErrorAsString;
 
     /**
@@ -124,7 +126,6 @@ public class FlumeResponseDTO {
      * // public T [] dataResults;
      */
     @SerializedName("data")
-    @JsonAdapter(RawJsonGsonAdapter.class)
     public @Nullable String dataAsString;
 
     /**
@@ -145,4 +146,116 @@ public class FlumeResponseDTO {
      */
     @SerializedName("pagination")
     public @Nullable FlumePaginationDTO pagination;
+
+    /**
+     * @return the success
+     */
+    public boolean isSuccess() {
+        return success;
+    }
+
+    /**
+     * @param success the success to set
+     */
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    /**
+     * @return the httpResponseCode
+     */
+    public int getHttpResponseCode() {
+        return httpResponseCode;
+    }
+
+    /**
+     * @param httpResponseCode the httpResponseCode to set
+     */
+    public void setHttpResponseCode(int httpResponseCode) {
+        this.httpResponseCode = httpResponseCode;
+    }
+
+    /**
+     * @return the message
+     */
+    public @Nullable String getMessage() {
+        return message;
+    }
+
+    /**
+     * @param message the message to set
+     */
+    public void setMessage(@Nullable String message) {
+        this.message = message;
+    }
+
+    /**
+     * @return the httpMessage
+     */
+    public @Nullable String getHttpMessage() {
+        return httpMessage;
+    }
+
+    /**
+     * @param httpMessage the httpMessage to set
+     */
+    public void setHttpMessage(@Nullable String httpMessage) {
+        this.httpMessage = httpMessage;
+    }
+
+    /**
+     * @return the detailedErrorAsString
+     */
+    public @Nullable String getDetailedErrorAsString() {
+        return detailedErrorAsString;
+    }
+
+    /**
+     * @param detailedErrorAsString the detailedErrorAsString to set
+     */
+    public void setDetailedErrorAsString(@Nullable String detailedErrorAsString) {
+        this.detailedErrorAsString = detailedErrorAsString;
+    }
+
+    /**
+     * @return the dataAsString
+     */
+    public @Nullable String getDataAsString() {
+        return dataAsString;
+    }
+
+    /**
+     * @param dataAsString the dataAsString to set
+     */
+    public void setDataAsString(@Nullable String dataAsString) {
+        this.dataAsString = dataAsString;
+    }
+
+    /**
+     * @return the count
+     */
+    public int getCount() {
+        return count;
+    }
+
+    /**
+     * @param count the count to set
+     */
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    /**
+     * @return the pagination
+     */
+    public @Nullable FlumePaginationDTO getPagination() {
+        return pagination;
+    }
+
+    /**
+     * @param pagination the pagination to set
+     */
+    public void setPagination(@Nullable FlumePaginationDTO pagination) {
+        this.pagination = pagination;
+    }
 }

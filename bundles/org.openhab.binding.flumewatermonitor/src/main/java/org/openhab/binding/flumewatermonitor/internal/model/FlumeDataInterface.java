@@ -10,24 +10,15 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.flumewatermonitor.internal.api;
+package org.openhab.binding.flumewatermonitor.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link NotFoundException} is thrown whenever account authorization
- * fails.
+ * The {@link FlumeDataInterface} represents the "data" returned by a data query.
  *
  * @author Sara Geleskie Damiano - Initial contribution
  */
 @NonNullByDefault
-public class NotFoundException extends Exception {
-    private static final long serialVersionUID = 7526994803548490522L;
-
-    public NotFoundException() {
-    }
-
-    public NotFoundException(String message) {
-        super(message);
-    }
+public interface FlumeDataInterface {
 }

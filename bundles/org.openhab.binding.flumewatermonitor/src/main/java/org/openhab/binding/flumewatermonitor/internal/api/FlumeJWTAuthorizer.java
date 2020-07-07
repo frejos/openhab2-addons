@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeAccountConfiguration;
 import org.openhab.binding.flumewatermonitor.internal.handler.FlumeAccountHandler;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeTokenData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +187,7 @@ public class FlumeJWTAuthorizer {
      */
     private CompletableFuture<@Nullable Void> sendTokenRequest(StringContentProvider content) {
         // Create a listener for the response
-        FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>();
+        FlumeResponseListener<FlumeTokenData> listener = new FlumeResponseListener<>(FlumeTokenData[].class);
         // Create the request
         @Nullable
         Request newRequest = accountHandler.createAsyncRequest("oauth/token", HttpMethod.POST, content);

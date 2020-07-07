@@ -32,10 +32,10 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.flumewatermonitor.internal.api.AuthorizationException;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeAsyncHttpApi;
 import org.openhab.binding.flumewatermonitor.internal.api.FlumeJWTAuthorizer;
 import org.openhab.binding.flumewatermonitor.internal.config.FlumeAccountConfiguration;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.AuthorizationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,7 +181,12 @@ public class FlumeAccountHandler extends BaseBridgeHandler {
      */
     public @Nullable Request createAsyncRequest(String uri, HttpMethod method,
             @Nullable StringContentProvider content) {
-        String url = FLUME_API_ENDPOINT + uri;
+        String url;
+        if (!uri.contains(FLUME_API_ENDPOINT)) {
+            url = FLUME_API_ENDPOINT + uri;
+        } else {
+            url = uri;
+        }
         logger.debug("Creating request to {} with method type {} and content {}", uri, method, content);
         try { // Create the request
             HttpClient outClient = getClient();

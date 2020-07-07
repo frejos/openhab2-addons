@@ -20,12 +20,14 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.AuthorizationException;
+import org.openhab.binding.flumewatermonitor.internal.exceptions.NotFoundException;
+import org.openhab.binding.flumewatermonitor.internal.model.FlumeResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
 /**
  * The {@link FlumeResponseListener} listens for async http responses and translates them into a completable future that
@@ -45,12 +47,14 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
     private CompletableFuture<T[]> future;
 
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+    private final Class<T[]> clazz;
 
     /**
      * Construct a new {@link FlumeResponseListener}
      */
-    public FlumeResponseListener() {
+    public FlumeResponseListener(Class<T[]> clazz) {
         this.future = new CompletableFuture<>();
+        this.clazz = clazz;
     }
 
     /**
@@ -124,8 +128,8 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
             if (resultDataString == null) {
                 throw new IOException("No result data returned in the response");
             }
-            T @Nullable [] arrayOfDatas = gson.fromJson(resultDataString, new TypeToken<T[]>() {
-            }.getType());
+            logger.trace("String with JSON of result array: {}", resultDataString);
+            T[] arrayOfDatas = gson.fromJson(resultDataString, clazz);
 
             // Try to extract the device data from the response.
             if (arrayOfDatas.length == 0) {
@@ -142,6 +146,7 @@ public class FlumeResponseListener<T> extends BufferingResponseListener {
                     throw new IOException("Malformed array, result " + i + " is null");
                 }
             }
+            logger.trace("Finished listener onComplete portion of response parsing");
             future.complete(arrayOfDatas);
         } catch (AuthorizationException | NotFoundException | IOException | RuntimeException e) {
             logger.debug("Exception in Flume response listener: {}", e.getMessage());

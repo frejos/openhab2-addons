@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.flumewatermonitor.internal.api;
+package org.openhab.binding.flumewatermonitor.internal.model;
 
 import java.io.IOException;
 
@@ -46,6 +46,9 @@ public class RawJsonGsonAdapter extends TypeAdapter<String> {
 
     @Override
     public String read(final @Nullable JsonReader in) throws IOException {
-        return in.toString();
+        if (in != null) {
+            return in.toString();
+        } else
+            return "";
     }
 }
