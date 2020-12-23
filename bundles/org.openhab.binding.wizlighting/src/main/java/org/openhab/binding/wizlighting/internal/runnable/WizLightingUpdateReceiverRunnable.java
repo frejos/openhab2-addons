@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -15,11 +15,12 @@ package org.openhab.binding.wizlighting.internal.runnable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;
 import org.openhab.binding.wizlighting.internal.handler.WizLightingMediator;
 import org.openhab.binding.wizlighting.internal.utils.WizLightingPacketConverter;
 import org.slf4j.Logger;
@@ -35,11 +36,11 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class WizLightingUpdateReceiverRunnable implements Runnable {
 
-    private static final int TIMEOUT_TO_DATAGRAM_RECEPTION = 10000;
+    private static final int TIMEOUT_TO_DATAGRAM_RECEPTION_MILLISECONDS = 15000;
 
     private final Logger logger = LoggerFactory.getLogger(WizLightingUpdateReceiverRunnable.class);
 
-    private @Nullable DatagramSocket datagramSocket;
+    private DatagramSocket datagramSocket;
     private final WizLightingMediator mediator;
     private final WizLightingPacketConverter packetConverter = new WizLightingPacketConverter();
 
@@ -56,17 +57,17 @@ public class WizLightingUpdateReceiverRunnable implements Runnable {
     public WizLightingUpdateReceiverRunnable(final WizLightingMediator mediator, final int listeningPort)
             throws SocketException {
         logger.debug("Starting Update Receiver Runnable...");
-
-        // Create a socket to listen on the port.
         this.listeningPort = listeningPort;
         this.mediator = mediator;
 
+        // Create a socket to listen on the port.
         logger.debug("Opening socket and start listening UDP port: {}", listeningPort);
-        this.datagramSocket = new DatagramSocket(listeningPort);
-        DatagramSocket mySock = this.datagramSocket;
-        if (mySock != null) {
-            mySock.setSoTimeout(TIMEOUT_TO_DATAGRAM_RECEPTION);
-        }
+        DatagramSocket dsocket = new DatagramSocket(null);
+        dsocket.setReuseAddress(true);
+        dsocket.setBroadcast(true);
+        dsocket.setSoTimeout(TIMEOUT_TO_DATAGRAM_RECEPTION_MILLISECONDS);
+        dsocket.bind(new InetSocketAddress(listeningPort));
+        this.datagramSocket = dsocket;
         logger.debug("Update Receiver Runnable and socket started with success...");
 
         this.shutdown = false;
@@ -74,65 +75,71 @@ public class WizLightingUpdateReceiverRunnable implements Runnable {
 
     @Override
     public void run() {
-        DatagramSocket datagramSocket = this.datagramSocket;
+        try {
+            // Now loop forever, waiting to receive packets and redirect them to mediator.
+            while (!this.shutdown) {
+                datagramSocketHealthRoutine();
 
-        // Now loop forever, waiting to receive packets and redirect them to mediator.
-        while (!this.shutdown) {
-            datagramSocketHealthRoutine();
+                // Create a buffer to read datagrams into. If a
+                // packet is larger than this buffer, the
+                // excess will simply be discarded!
+                byte[] buffer = new byte[2048];
 
-            // Create a buffer to read datagrams into. If a
-            // packet is larger than this buffer, the
-            // excess will simply be discarded!
-            byte[] buffer = new byte[2048];
+                // Create a packet to receive data into the buffer
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            // Create a packet to receive data into the buffer
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-            if (datagramSocket != null) {
                 // Wait to receive a datagram
                 try {
                     datagramSocket.receive(packet);
 
-                    logger.debug("Received packet from: {}. Will process the packet...",
+                    logger.trace("Runnable received packet from: {}. Will process the packet...",
                             packet.getAddress().getHostAddress());
 
                     // Redirect packet to the mediator
-                    this.mediator.processReceivedPacket(this.packetConverter.transformSyncResponsePacket(packet));
-
-                    logger.debug("Message delivered with success to mediator.");
+                    WizLightingResponse response = this.packetConverter.transformResponsePacket(packet);
+                    if (response != null) {
+                        this.mediator.processReceivedPacket(response);
+                    } else {
+                        logger.debug("No WizLightingResponse was parsed from returned packet");
+                    }
                 } catch (SocketTimeoutException e) {
-                    logger.trace("Socket Timeout receiving packet.");
+                    logger.trace("No incoming data on port {} during {} ms socket was listening.", listeningPort,
+                            TIMEOUT_TO_DATAGRAM_RECEPTION_MILLISECONDS);
                 } catch (IOException e) {
                     logger.debug("One exception has occurred: {} ", e.getMessage());
                 }
             }
-        }
-
-        // close the socket
-        if (datagramSocket != null) {
+        } finally {
+            // close the socket
+            logger.trace("Ending run loop; closing socket.");
             datagramSocket.close();
         }
     }
 
     private void datagramSocketHealthRoutine() {
         DatagramSocket datagramSocket = this.datagramSocket;
-        if (datagramSocket == null || datagramSocket.isClosed()) {
-            logger.debug("Datagram Socket has been closed, will reconnect again...");
-            DatagramSocket newDatagramSocket = null;
+        if (datagramSocket.isClosed() || !datagramSocket.isConnected()) {
+            logger.trace("Datagram Socket is disconnected or has been closed (probably timed out), reconnecting...");
             try {
-                newDatagramSocket = new DatagramSocket(listeningPort);
-                newDatagramSocket.setSoTimeout(TIMEOUT_TO_DATAGRAM_RECEPTION);
-                datagramSocket = newDatagramSocket;
-                logger.debug("Datagram Socket reconnected.");
+                // close the socket before trying to reopen
+                this.datagramSocket.close();
+                logger.trace("Old socket closed.");
+                DatagramSocket dsocket = new DatagramSocket(null);
+                dsocket.setReuseAddress(true);
+                dsocket.setBroadcast(true);
+                dsocket.setSoTimeout(TIMEOUT_TO_DATAGRAM_RECEPTION_MILLISECONDS);
+                dsocket.bind(new InetSocketAddress(listeningPort));
+                this.datagramSocket = dsocket;
+                logger.trace("Datagram Socket reconnected.");
             } catch (SocketException exception) {
-                logger.error("Problem creating one new socket on port {}. Error: {}", listeningPort,
+                logger.warn("Problem creating one new socket on port {}. Error: {}", listeningPort,
                         exception.getLocalizedMessage());
             }
         }
     }
 
     /**
-     * Gracefully shutdown thread. Worst case takes TIMEOUT_TO_DATAGRAM_RECEPTION to
+     * Gracefully shutdown thread. Worst case takes TIMEOUT_TO_DATAGRAM_RECEPTION_MILLISECONDS to
      * shutdown.
      */
     public void shutdown() {

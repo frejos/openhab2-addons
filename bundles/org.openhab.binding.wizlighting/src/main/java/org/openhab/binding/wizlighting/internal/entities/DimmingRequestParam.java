@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -13,29 +13,30 @@
 package org.openhab.binding.wizlighting.internal.entities;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.core.library.types.PercentType;
-import org.openhab.core.types.Command;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * This POJO represents Dimming Request Param
+ *
+ * The outgoing JSON should look like this:
+ *
+ * {"id": 24, "method": "setPilot", "params": {"dimming": 10}}
+ *
+ * NOTE: Dimming cannot be set below 10%. Sending a command with a value of less
+ * than 10 will cause the bulb to reply with an error.
  *
  * @author Sriram Balakrishnan - Initial contribution
  *
  */
 @NonNullByDefault
-public class DimmingRequestParam implements Param {
+public class DimmingRequestParam extends StateRequestParam {
+    @Expose(serialize = true, deserialize = true)
     private int dimming;
 
     public DimmingRequestParam(int dimming) {
-        this.dimming = dimming;
-    }
-
-    public DimmingRequestParam(Command command) {
-        if (command instanceof PercentType) {
-            this.setDimming(((PercentType) command).intValue());
-        } else {
-            this.setDimming(100);
-        }
+        super(true);
+        this.dimming = dimming >= 10 ? dimming : 10;
     }
 
     public int getDimming() {

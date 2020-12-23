@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,28 +12,38 @@
  */
 package org.openhab.binding.wizlighting.internal.entities;
 
+import static org.openhab.binding.wizlighting.internal.WizLightingBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.core.library.types.PercentType;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * This POJO represents Color Request Param
+ *
+ * The outgoing JSON should look like this:
+ *
+ * {"id": 24, "method": "setPilot", "params": {"temp": 3000}}
  *
  * @author Alexander Seeliger - Initial contribution
  *
  */
 @NonNullByDefault
 public class ColorTemperatureRequestParam implements Param {
+    @Expose(serialize = true, deserialize = true)
     private int temp;
 
-    public ColorTemperatureRequestParam(PercentType colorTemperature) {
-        temp = 2200 + (colorTemperature.intValue() * (6500 - 2200) / 100);
+    public ColorTemperatureRequestParam(PercentType colorPercent) {
+        // NOTE: 0% is cold (highest K) and 100% is warm (lowest K)
+        temp = MAX_COLOR_TEMPERATURE - Math.round((COLOR_TEMPERATURE_RANGE * colorPercent.floatValue()) / 100);
     }
 
-    public int getTemp() {
+    public int getColorTemperature() {
         return temp;
     }
 
-    public void setTemp(int temp) {
+    public void setColorTemperature(int temp) {
         this.temp = temp;
     }
 }

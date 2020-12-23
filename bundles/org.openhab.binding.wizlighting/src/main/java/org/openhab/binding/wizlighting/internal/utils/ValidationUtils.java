@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -11,6 +11,9 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.wizlighting.internal.utils;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
@@ -28,6 +31,7 @@ public final class ValidationUtils {
     }
 
     public static final String MAC_PATTERN = "^([0-9A-Fa-f]{2}[:-]*){5}([0-9A-Fa-f]{2})$";
+    private static final Pattern VALID_PATTERN = Pattern.compile(ValidationUtils.MAC_PATTERN);
 
     /**
      * Validates if one Mac address is valid.
@@ -36,10 +40,8 @@ public final class ValidationUtils {
      * @return true if is valid.
      */
     public static boolean isMacValid(final String mac) {
-        return true;
-        // Pattern pattern = Pattern.compile(ValidationUtils.MAC_PATTERN);
-        // Matcher matcher = pattern.matcher(mac);
-        // return matcher.matches();
+        Matcher matcher = VALID_PATTERN.matcher(mac);
+        return matcher.matches();
     }
 
     /**
@@ -51,5 +53,4 @@ public final class ValidationUtils {
     public static boolean isMacNotValid(final String macAddress) {
         return !isMacValid(macAddress);
     }
-
 }

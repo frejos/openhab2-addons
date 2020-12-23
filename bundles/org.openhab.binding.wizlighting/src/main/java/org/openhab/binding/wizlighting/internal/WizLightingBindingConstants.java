@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,10 +12,9 @@
  */
 package org.openhab.binding.wizlighting.internal;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.core.thing.ThingTypeUID;
@@ -33,71 +32,105 @@ public class WizLightingBindingConstants {
      * The binding id.
      */
     public static final String BINDING_ID = "wizlighting";
+    public static final String CURRENT_BINDING_VERSION = "v0.02.19";
 
     /**
      * List of all Thing Type UIDs.
      */
-    public static final ThingTypeUID THING_TYPE_WIZ_BULB = new ThingTypeUID(BINDING_ID, "wizBulb");
-
-    /**
-     * List of all Channel ids
-     */
-    public static final String BULB_SWITCH_CHANNEL_ID = "switch";
-    public static final String BULB_COLOR_CHANNEL_ID = "color";
-    public static final String BULB_SCENE_CHANNEL_ID = "scene";
-    public static final String BULB_SPEED_CHANNEL_ID = "speed";
-    public static final String BULB_RSSI_CHANNEL_ID = "rssi";
+    public static final ThingTypeUID THING_TYPE_WIZ_COLOR_BULB = new ThingTypeUID(BINDING_ID, "wizColorBulb");
+    public static final ThingTypeUID THING_TYPE_WIZ_TUNABLE_BULB = new ThingTypeUID(BINDING_ID, "wizTunableBulb");
+    public static final ThingTypeUID THING_TYPE_WIZ_DIMMABLE_BULB = new ThingTypeUID(BINDING_ID, "wizDimmableBulb");
+    public static final ThingTypeUID THING_TYPE_WIZ_SMART_PLUG = new ThingTypeUID(BINDING_ID, "wizPlug");
 
     /**
      * The supported thing types.
      */
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(THING_TYPE_WIZ_BULB)));
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES = Stream.of(THING_TYPE_WIZ_COLOR_BULB,
+            THING_TYPE_WIZ_TUNABLE_BULB, THING_TYPE_WIZ_DIMMABLE_BULB, THING_TYPE_WIZ_SMART_PLUG)
+            .collect(Collectors.toSet());
+
+    /**
+     * List of all Channel ids
+     */
+    public static final String CHANNEL_COLOR = "color";
+    public static final String CHANNEL_TEMPERATURE = "temperature";
+    public static final String CHANNEL_DIMMING = "dimming";
+    public static final String CHANNEL_SWITCH_STATE = "state";
+    public static final String CHANNEL_LIGHT_MODE = "lightMode";
+    public static final String CHANNEL_DYNAMIC_SPEED = "speed";
+    public static final String CHANNEL_RSSI = "signalstrength";
+    public static final String CHANNEL_LAST_UPDATE = "lastUpdate";
 
     // -------------- Configuration arguments ----------------
     /**
      * Mac address configuration argument key.
      */
-    public static final String BULB_MAC_ADDRESS_ARG = "bulbMacAddress";
+    public static final String CONFIG_MAC_ADDRESS = "bulbMacAddress";
+    public static final String MISSING_INVALID_MAC_ADDRESS = "bulbMacAddress";
 
     /**
      * Host address configuration argument key.
      */
-    public static final String BULB_IP_ADDRESS_ARG = "bulbIpAddress";
+    public static final String CONFIG_IP_ADDRESS = "bulbIpAddress";
+    public static final String MISSING_INVALID_IP_ADDRESS = "bulbIpAddress";
 
     /**
      * Wifi socket update interval configuration argument key.
      */
-    public static final String UPDATE_INTERVAL_ARG = "updateInterval";
+    public static final String CONFIG_UPDATE_INTERVAL = "updateInterval";
+    public static final long DEFAULT_REFRESH_INTERVAL_SEC = 60;
 
     /**
-     * Home id configuration argument key.
+     * Wifi socket update interval configuration argument key.
      */
-    public static final String OH_MAC_ADDRESS_ARG = "ohMacAddress";
-
-    /**
-     * Home id configuration argument key.
-     */
-    public static final String OH_IP_ADDRESS_ARG = "ohIpAddress";
-
-    /**
-     * Home id configuration argument key.
-     */
-    public static final String HOME_ID_ARG = "homeId";
+    public static final String CONFIG_RECONNECT_INTERVAL = "reconnectInterval";
+    public static final long DEFAULT_RECONNECT_INTERVAL_MIN = 15;
 
     // -------------- Default values ----------------
+
     /**
-     * Default Wifi socket refresh interval.
+     * The number of refresh intervals without a response before a bulb is marked
+     * offline
      */
-    public static final long DEFAULT_REFRESH_INTERVAL = 60;
+    public static final int MARK_OFFLINE_AFTER_SEC = 5 * 60;
 
     /**
      * Default Wifi socket default UDP port.
      */
-    public static final int BULB_DEFAULT_UDP_PORT = 38899;
+    public static final int DEFAULT_BULB_UDP_PORT = 38899;
 
     /**
      * Default listener socket default UDP port.
      */
-    public static final int LISTENER_DEFAULT_UDP_PORT = 38900;
+    public static final int DEFAULT_LISTENER_UDP_PORT = 38900;
+
+    /**
+     * How long before active discovery times out.
+     */
+    public static final int DISCOVERY_TIMEOUT_SECONDS = 2;
+
+    // -------------- Constants Used ----------------
+
+    /**
+     * The color temperature range of the WiZ bulbs
+     */
+    public static final int MIN_COLOR_TEMPERATURE = 2200;
+    public static final int MAX_COLOR_TEMPERATURE = 6500;
+    public static final int COLOR_TEMPERATURE_RANGE = MAX_COLOR_TEMPERATURE - MIN_COLOR_TEMPERATURE;
+
+    // -------------- Bulb Properties ----------------
+
+    public static final String PROPERTY_BINDING_VERSION = "bindingVersion";
+    public static final String PROPERTY_IP_ADDRESS = "ipAddress";
+
+    public static final String PROPERTY_HOME_ID = "homeId";
+    public static final String PROPERTY_ROOM_ID = "roomId";
+    public static final String PROPERTY_HOME_LOCK = "homeLock";
+    public static final String PROPERTY_PAIRING_LOCK = "pairingLock";
+    public static final String PROPERTY_TYPE_ID = "typeId";
+    public static final String PROPERTY_MODULE_NAME = "moduleName";
+    public static final String PROPERTY_GROUP_ID = "groupId";
+
+    public static final String EXPECTED_MODULE_NAME = "ESP01_SHRGB1C_31";
+    public static final String LAST_KNOWN_FIRMWARE_VERSION = "1.18.0";
 }

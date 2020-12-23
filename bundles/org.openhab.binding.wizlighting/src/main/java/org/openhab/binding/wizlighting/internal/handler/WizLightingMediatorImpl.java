@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.wizlighting.internal.handler;
 
+import static org.openhab.binding.wizlighting.internal.WizLightingBindingConstants.*;
+
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,13 +21,19 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.wizlighting.internal.WizLightingBindingConstants;
+import org.openhab.core.net.NetworkAddressService;
+import org.openhab.core.thing.Thing;
 import org.openhab.binding.wizlighting.internal.discovery.WizLightingDiscoveryService;
+import org.openhab.binding.wizlighting.internal.entities.RegistrationRequestParam;
 import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;
 import org.openhab.binding.wizlighting.internal.runnable.WizLightingUpdateReceiverRunnable;
-import org.openhab.core.thing.Thing;
+import org.openhab.binding.wizlighting.internal.utils.NetworkUtils;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,17 +52,21 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
     private final Map<Thing, WizLightingHandler> handlersRegisteredByThing = new HashMap<>();
 
     private @Nullable WizLightingUpdateReceiverRunnable receiver;
-    private @Nullable Thread receiverThread;
+    private @Nullable Thread wizLightingReceiverThread;
 
     private @Nullable WizLightingDiscoveryService wizlightingDiscoveryService;
 
+    private final NetworkAddressService networkAddressService;
+
     /**
-     * Called at the service activation.
+     * Constructor for the mediator implementation.
      *
-     * @param componentContext the componentContext
+     * @param IllegalArgumentException if the timeout < 0
      */
-    protected void activate(final ComponentContext componentContext) {
-        logger.trace("Mediator has been activated by OSGI.");
+    @Activate
+    public WizLightingMediatorImpl(
+            @Reference(cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC) NetworkAddressService networkAddressService) {
+        this.networkAddressService = networkAddressService;
         this.initMediatorWizBulbUpdateReceiverRunnable();
     }
 
@@ -78,33 +90,34 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
      */
     @Override
     public void processReceivedPacket(final WizLightingResponse receivedMessage) {
-        logger.debug("Received packet from: {} with method: [{}]", receivedMessage.getWizResponseIpAddress(),
-                receivedMessage.getMethod());
+        logger.debug("Received packet from: {} - {} with method: [{}]", receivedMessage.getWizResponseIpAddress(),
+                receivedMessage.getWizResponseMacAddress(), receivedMessage.getMethod());
 
-        @Nullable
         String bulbIp = receivedMessage.getWizResponseIpAddress();
-        @Nullable
         String bulbMac = receivedMessage.getWizResponseMacAddress();
 
-        if (bulbMac != null) {
+        if (!bulbMac.equals(MISSING_INVALID_MAC_ADDRESS)) {
             @Nullable
             WizLightingHandler handler = this.getHandlerRegisteredByMac(bulbMac);
 
             if (handler != null) {
                 // deliver message to handler.
                 handler.newReceivedResponseMessage(receivedMessage);
-                logger.debug("Received message delivered with success to handler of mac {}",
-                        receivedMessage.getWizResponseIpAddress());
-            } else if (bulbIp != null) {
+                logger.trace("Received message from {} delivered with success to handler of mac {}",
+                        receivedMessage.getWizResponseIpAddress(), receivedMessage.getWizResponseMacAddress());
+            } else if (!bulbIp.equals(MISSING_INVALID_IP_ADDRESS)) {
                 logger.debug("There is no handler registered for mac address: {}",
-                        receivedMessage.getWizResponseIpAddress());
+                        receivedMessage.getWizResponseMacAddress());
                 WizLightingDiscoveryService discoveryServe = this.wizlightingDiscoveryService;
                 if (discoveryServe != null) {
                     discoveryServe.discoveredLight(bulbMac, bulbIp);
+                    logger.trace("Sending a new thing to the discovery service.  MAC: {}  IP: {}", bulbMac, bulbIp);
+                } else {
+                    logger.trace("There is no discovery service registered to receive the new bulb!");
                 }
             }
         } else {
-            logger.warn("The sync response did not contain a mac address, it cannot be processed.");
+            logger.warn("The sync response did not contain a valid mac address, it cannot be processed.");
         }
     }
 
@@ -131,7 +144,7 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
     }
 
     /**
-     * Utilitary method to get the registered thing handler in mediator by the mac
+     * Utility method to get the registered thing handler in mediator by the mac
      * address.
      *
      * @param bulbMacAddress the mac address of the thing of the handler.
@@ -156,21 +169,23 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
      */
     private void initMediatorWizBulbUpdateReceiverRunnable() {
         WizLightingUpdateReceiverRunnable receiver = this.receiver;
-        Thread receiverThread = this.receiverThread;
+        Thread receiverThread = this.wizLightingReceiverThread;
         // try with handler port if is null
         if ((receiver == null)
                 || ((receiverThread != null) && (receiverThread.isInterrupted() || !receiverThread.isAlive()))) {
             try {
-                this.receiver = new WizLightingUpdateReceiverRunnable(this,
-                        WizLightingBindingConstants.LISTENER_DEFAULT_UDP_PORT);
-                this.receiverThread = new Thread(receiver);
-                Thread receiverThread2 = this.receiverThread;
-                if (receiverThread2 != null) {
-                    receiverThread2.start();
-                }
-                logger.debug("Invoked the start of receiver thread.");
+                logger.trace("Receiver thread is either null, interrupted, or dead.");
+                WizLightingUpdateReceiverRunnable newReceiver = new WizLightingUpdateReceiverRunnable(this,
+                        DEFAULT_LISTENER_UDP_PORT);
+                Thread newThread = new Thread(newReceiver);
+                newThread.setDaemon(true);
+                newThread.start();
+                newThread.setName("wizLightingReceiverThread");
+                this.receiver = newReceiver;
+                this.wizLightingReceiverThread = newThread;
+                logger.trace("A new receiver thread has been started.");
             } catch (SocketException e) {
-                logger.debug("Cannot start the socket with default port...");
+                logger.debug("Cannot start the socket with default port {}...", e.getMessage());
             }
         }
     }
@@ -183,6 +198,41 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
     @Override
     public Set<Thing> getAllThingsRegistered() {
         return this.handlersRegisteredByThing.keySet();
+    }
+
+    private String getMyIpAddress() {
+        String myIpAddress = networkAddressService.getPrimaryIpv4HostAddress();
+        if (myIpAddress == null) {
+            logger.warn("Network interface did not return an IP address!");
+            return "OHIPAddress";
+        }
+        logger.info("IP of OpenHab device is {}.", myIpAddress);
+        return myIpAddress;
+    }
+
+    private String getMyMacAddress() {
+        String myMacAddress;
+        try {
+            myMacAddress = NetworkUtils.getMyMacAddress();
+            if (myMacAddress == null) {
+                logger.warn("No network interface could be found.  MAC of OpenHab device is unknown.");
+                return "OHMACAddress";
+            }
+        } catch (Exception e) {
+            logger.warn("MAC Address of OpenHab device is invalid.");
+            return "OHMACAddress";
+        }
+        logger.info("MAC Address of OpenHab device is {}.", myMacAddress);
+        return myMacAddress;
+    }
+
+    /**
+     * Returns a {@link RegistrationRequestParam} based on the current OpenHAB
+     * connection.
+     *
+     */
+    public RegistrationRequestParam getRegistrationParams() {
+        return new RegistrationRequestParam(getMyIpAddress(), true, 0, getMyMacAddress());
     }
 
     @Override

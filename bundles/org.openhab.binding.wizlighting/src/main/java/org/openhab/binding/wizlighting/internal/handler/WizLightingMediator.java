@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -16,9 +16,10 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.wizlighting.internal.discovery.WizLightingDiscoveryService;
-import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;
 import org.openhab.core.thing.Thing;
+import org.openhab.binding.wizlighting.internal.discovery.WizLightingDiscoveryService;
+import org.openhab.binding.wizlighting.internal.entities.RegistrationRequestParam;
+import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;
 
 /**
  * The {@link WizLightingMediator} is responsible for receiving all the sync
@@ -36,6 +37,13 @@ public interface WizLightingMediator {
      * @param receivedMessage the {@link WizLightingResponse} message.
      */
     void processReceivedPacket(final WizLightingResponse receivedMessage);
+
+    /**
+     * Returns a {@link RegistrationRequestParam} based on the current OpenHAB
+     * connection.
+     *
+     */
+    RegistrationRequestParam getRegistrationParams();
 
     /**
      * Registers a new {@link Thing} and the corresponding

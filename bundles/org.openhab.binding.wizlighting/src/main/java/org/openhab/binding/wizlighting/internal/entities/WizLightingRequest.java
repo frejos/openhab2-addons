@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -13,7 +13,10 @@
 package org.openhab.binding.wizlighting.internal.entities;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.wizlighting.internal.enums.WizLightingMethodType;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * This POJO represents one WiZ Lighting UDP Request.
@@ -23,10 +26,17 @@ import org.openhab.binding.wizlighting.internal.enums.WizLightingMethodType;
  */
 @NonNullByDefault
 public class WizLightingRequest {
+    @Expose(serialize = true, deserialize = true)
     private int id;
 
+    @Expose(serialize = true, deserialize = true)
     private WizLightingMethodType method;
-    private Param params;
+
+    @Expose(serialize = false, deserialize = false)
+    private String methodName;
+
+    @Expose(serialize = true, deserialize = false)
+    private @Nullable Param params;
 
     /**
      * Default constructor.
@@ -34,12 +44,13 @@ public class WizLightingRequest {
      * @param type the {@link WizLightingMethodType}
      * @param params {@link Param}
      */
-    public WizLightingRequest(final WizLightingMethodType method, final Param params) {
+    public WizLightingRequest(final WizLightingMethodType method, final @Nullable Param params) {
         this.method = method;
+        this.methodName = method.getMethodName();
         this.params = params;
     }
 
-    public Param getParams() {
+    public @Nullable Param getParams() {
         return this.params;
     }
 
@@ -53,6 +64,7 @@ public class WizLightingRequest {
 
     public void setMethod(final WizLightingMethodType method) {
         this.method = method;
+        this.methodName = method.getMethodName();
     }
 
     public int getId() {

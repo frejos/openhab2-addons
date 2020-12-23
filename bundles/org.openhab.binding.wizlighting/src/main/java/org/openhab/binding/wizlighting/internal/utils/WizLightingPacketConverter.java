@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.wizlighting.internal.utils;
 
+import static java.nio.charset.StandardCharsets.*;
+
 import java.net.DatagramPacket;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 
 /**
  * Transforms the datagram packet to request/response
@@ -41,7 +44,12 @@ public class WizLightingPacketConverter {
      * Default constructor of the packet converter.
      */
     public WizLightingPacketConverter() {
-        this.wizlightingGsonBuilder = new GsonBuilder().create();
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(WizLightingResponse.class, new WizResponseDeserializer());
+        gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+        // gsonBuilder.setLenient();
+        Gson gson = gsonBuilder.create();
+        this.wizlightingGsonBuilder = gson;
     }
 
     /**
@@ -55,9 +63,9 @@ public class WizLightingPacketConverter {
 
         // {"id":20,"method":"setPilot","params":{"sceneId":18}}
         String jsonCmd = this.wizlightingGsonBuilder.toJson(requestPacket);
-        logger.debug("JsonCmd={{}}", jsonCmd);
+        logger.debug("JSON Command: {}", jsonCmd);
 
-        requestDatagram = jsonCmd.getBytes();
+        requestDatagram = jsonCmd.getBytes(UTF_8);
         return requestDatagram;
     }
 
@@ -68,13 +76,21 @@ public class WizLightingPacketConverter {
      * @param packet the {@link DatagramPacket}
      * @return the {@link WizLightingResponse}
      */
-    public WizLightingResponse transformSyncResponsePacket(final DatagramPacket packet) {
-        String responseJson = new String(packet.getData(), 0, packet.getLength());
-        logger.debug("Sync Response Json={{}}", responseJson);
+    public @Nullable WizLightingResponse transformResponsePacket(final DatagramPacket packet) {
+        String responseJson = new String(packet.getData(), 0, packet.getLength(), UTF_8);
+        logger.debug("Incoming packet from {} to convert -> {}", packet.getAddress().getHostAddress(), responseJson);
+        logger.trace("Raw length: {}  Transformed length: {}", packet.getLength(), responseJson.length());
 
         @Nullable
-        WizLightingResponse response = this.wizlightingGsonBuilder.fromJson(responseJson, WizLightingResponse.class);
-        response.setWizResponseIpAddress(packet.getAddress().getHostAddress());
+        WizLightingResponse response = null;
+        try {
+            logger.trace("Attempting to parse json");
+            response = this.wizlightingGsonBuilder.fromJson(responseJson, WizLightingResponse.class);
+            logger.trace("JSON Deserialized!  Adding the IP address.");
+            response.setWizResponseIpAddress(packet.getAddress().getHostAddress());
+        } catch (JsonParseException e) {
+            logger.error("Error parsing json! {}", e.getMessage());
+        }
         return response;
     }
 }

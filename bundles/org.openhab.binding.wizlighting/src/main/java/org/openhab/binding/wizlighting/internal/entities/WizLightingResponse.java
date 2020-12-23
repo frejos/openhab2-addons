@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -12,8 +12,13 @@
  */
 package org.openhab.binding.wizlighting.internal.entities;
 
+import static org.openhab.binding.wizlighting.internal.WizLightingBindingConstants.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.wizlighting.internal.enums.WizLightingMethodType;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * This POJO represents one WiZ Lighting Response
@@ -24,47 +29,85 @@ import org.eclipse.jdt.annotation.Nullable;
 @NonNullByDefault
 public class WizLightingResponse {
 
+    // The IP address we're coming from
+    @Expose(serialize = false, deserialize = true)
+    private String wizResponseIpAddress = MISSING_INVALID_IP_ADDRESS;
+
     // Increasing numeric value.
     // Bulb doesn't seem to care if it receives the same id multiple time
     // or commands with lower numbers after higher ones.
+    @Expose(serialize = true, deserialize = true)
     private int id;
     // Not sure what env is - value always seems to be "pro"
+    @Expose(serialize = true, deserialize = true)
     private @Nullable String env;
+
+    // An error response
+    @Expose(serialize = true, deserialize = true)
+    private @Nullable ErrorResponseResult methodError;
+
     // The method being used - see the enum for details
-    private @Nullable String method;
+    // We're setting this to "unknown"
+    @Expose(serialize = true, deserialize = true)
+    private WizLightingMethodType method = WizLightingMethodType.UnknownMethod;
+
+    // The MAC address the response is coming from
+    @Expose(serialize = true, deserialize = true)
+    private String mac = MISSING_INVALID_MAC_ADDRESS;
+
+    // Whether or not a command succeeded (if the response is from a command)
+    @Expose(serialize = true, deserialize = true)
+    private boolean success = false;
+
+    // The system configuration result, if present
+    @Expose(serialize = true, deserialize = true)
+    private @Nullable SystemConfigResult configResult;
 
     // The parameters or result of a command/response
-    private @Nullable SyncResponseParam params;
-    private @Nullable CommandResponseResult result;
+    // A "result" is generally returned when solicited using a set/get method and a
+    // "params" is retuned with an unsolicited sync/heartbeat. The result returned
+    // from a get method is generally identical to the params returned in the
+    // heartbeat.
+    @Expose(serialize = true, deserialize = true)
+    private @Nullable WizLightingSyncState params;
 
-    private @Nullable String wizResponseIpAddress;
+    /**
+     * Setters and Getters
+     */
 
-    public WizLightingResponse() {
+    public @Nullable SystemConfigResult getSystemConfigResults() {
+        return this.configResult;
     }
 
-    public @Nullable String getWizResponseMacAddress() {
-        SyncResponseParam params = this.getParams();
-        CommandResponseResult result = this.getResult();
-        if (params != null) {
-            return params.mac;
-        } else if (result != null) {
-            return result.mac;
-        } else {
-            return null;
-        }
+    public void setSystemConfigResult(final SystemConfigResult configResult) {
+        this.configResult = configResult;
+    }
+
+    public boolean getResultSuccess() {
+        return this.success;
+    }
+
+    public void setResultSucess(final boolean success) {
+        this.success = success;
+    }
+
+    public @Nullable WizLightingSyncState getSyncState() {
+        return this.params;
+    }
+
+    public void setSyncParams(final WizLightingSyncState params) {
+        this.params = params;
+    }
+
+    public String getWizResponseMacAddress() {
+        return this.mac;
     }
 
     public void setWizResponseMacAddress(final String wizResponseMacAddress) {
-        SyncResponseParam params = this.getParams();
-        CommandResponseResult result = this.getResult();
-        if (params != null) {
-            params.mac = wizResponseMacAddress;
-        } else if (result != null) {
-            result.mac = wizResponseMacAddress;
-        }
+        this.mac = wizResponseMacAddress;
     }
 
-    public @Nullable String getWizResponseIpAddress() {
+    public String getWizResponseIpAddress() {
         return this.wizResponseIpAddress;
     }
 
@@ -76,15 +119,15 @@ public class WizLightingResponse {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(final int id) {
         this.id = id;
     }
 
-    public @Nullable String getMethod() {
+    public @Nullable WizLightingMethodType getMethod() {
         return method;
     }
 
-    public void setMethod(String method) {
+    public void setMethod(final WizLightingMethodType method) {
         this.method = method;
     }
 
@@ -92,23 +135,15 @@ public class WizLightingResponse {
         return env;
     }
 
-    public void setEnv(String env) {
+    public void setEnv(final String env) {
         this.env = env;
     }
 
-    public @Nullable SyncResponseParam getParams() {
-        return params;
+    public @Nullable ErrorResponseResult getError() {
+        return methodError;
     }
 
-    public void setParams(SyncResponseParam params) {
-        this.params = params;
-    }
-
-    public @Nullable CommandResponseResult getResult() {
-        return result;
-    }
-
-    public void setResult(CommandResponseResult result) {
-        this.result = result;
+    public void setError(ErrorResponseResult error) {
+        this.methodError = error;
     }
 }

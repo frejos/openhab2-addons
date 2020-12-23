@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2020 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information.
@@ -13,7 +13,8 @@
 package org.openhab.binding.wizlighting.internal.entities;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.core.library.types.OnOffType;
+
+import com.google.gson.annotations.Expose;
 
 /**
  * This POJO represents State Request Param
@@ -23,15 +24,8 @@ import org.openhab.core.library.types.OnOffType;
  */
 @NonNullByDefault
 public class StateRequestParam implements Param {
+    @Expose(serialize = true, deserialize = true)
     private boolean state; // true = ON, false = OFF
-
-    public StateRequestParam(OnOffType command) {
-        if (command == OnOffType.ON) {
-            state = true;
-        } else {
-            state = false;
-        }
-    }
 
     public StateRequestParam(boolean state) {
         this.state = state;
