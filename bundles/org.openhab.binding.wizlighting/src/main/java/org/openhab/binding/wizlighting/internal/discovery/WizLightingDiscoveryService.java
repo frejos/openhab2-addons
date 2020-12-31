@@ -33,7 +33,6 @@ import org.openhab.core.config.discovery.DiscoveryResultBuilder;
 import org.openhab.core.config.discovery.DiscoveryService;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.ThingUID;
-import org.openhab.binding.wizlighting.internal.entities.RegistrationRequestParam;
 import org.openhab.binding.wizlighting.internal.entities.SystemConfigResult;
 import org.openhab.binding.wizlighting.internal.entities.WizLightingRequest;
 import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;

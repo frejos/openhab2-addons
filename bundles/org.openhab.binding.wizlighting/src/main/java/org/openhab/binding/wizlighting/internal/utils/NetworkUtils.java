@@ -18,9 +18,6 @@ import java.net.SocketException;
 import java.rmi.UnknownHostException;
 import java.util.Enumeration;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.wizlighting.internal.handler.WizLightingMediatorImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +28,6 @@ import org.slf4j.LoggerFactory;
  * @author Joshua Freeman - Modified to get MAC matching IP 
  *
  */
-@NonNullByDefault
 public final class NetworkUtils {
 
 	private final static Logger logger = LoggerFactory.getLogger(NetworkUtils.class);
@@ -43,15 +39,13 @@ public final class NetworkUtils {
      * @throws UnknownHostException
      * @throws SocketException
      */
-    public static @Nullable String getMyMacAddress(String matchIP) throws UnknownHostException, SocketException {
+    public static String getMyMacAddress(String matchIP) throws UnknownHostException, SocketException {
     	String macAddress = null;
         Enumeration<NetworkInterface> networks = NetworkInterface.getNetworkInterfaces();        
         while (networks.hasMoreElements()) {        	
-            @Nullable
             NetworkInterface network = networks.nextElement();
             
-            if (networkMatchesIP(network, matchIP)) {
-            	
+            if (network != null && networkMatchesIP(network, matchIP)) {            	
             	macAddress = convertBytesToMACString(network.getHardwareAddress());
             	break; // Short circuit if we found it
             }
