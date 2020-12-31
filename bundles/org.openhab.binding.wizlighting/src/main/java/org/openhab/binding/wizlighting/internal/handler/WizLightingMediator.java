@@ -16,6 +16,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.core.net.NetworkAddressService;
 import org.openhab.core.thing.Thing;
 import org.openhab.binding.wizlighting.internal.discovery.WizLightingDiscoveryService;
 import org.openhab.binding.wizlighting.internal.entities.RegistrationRequestParam;
@@ -26,6 +27,7 @@ import org.openhab.binding.wizlighting.internal.entities.WizLightingResponse;
  * packets and route correctly to each handler.
  *
  * @author Sriram Balakrishnan - Initial contribution
+ * @author Joshua Freeman - pass through NetworkAddressService 
  */
 @NonNullByDefault
 public interface WizLightingMediator {
@@ -75,4 +77,11 @@ public interface WizLightingMediator {
      * @param discoveryService the discovery service.
      */
     void setDiscoveryService(final @Nullable WizLightingDiscoveryService discoveryService);
+    
+    /**
+     * Gets the NetworkAddressService used to configure the mediator instance.
+     * 
+     * @return networkAddressService
+     */
+    NetworkAddressService getNetworkAddressService();
 }

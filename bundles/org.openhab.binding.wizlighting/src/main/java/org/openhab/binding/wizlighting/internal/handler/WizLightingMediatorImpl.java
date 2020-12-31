@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
  * packets and route correctly to each handler.
  *
  * @author Sriram Balakrishnan - Initial contribution
+ * @author Joshua Freeman - pass through NetworkAddressService
  */
 @Component(configurationPid = "WizLightingMediator", service = WizLightingMediator.class)
 @NonNullByDefault
@@ -213,7 +214,7 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
     private String getMyMacAddress() {
         String myMacAddress;
         try {
-            myMacAddress = NetworkUtils.getMyMacAddress();
+            myMacAddress = NetworkUtils.getMyMacAddress(getMyIpAddress());
             if (myMacAddress == null) {
                 logger.warn("No network interface could be found.  MAC of OpenHab device is unknown.");
                 return "OHMACAddress";
@@ -242,5 +243,10 @@ public class WizLightingMediatorImpl implements WizLightingMediator {
 
     public @Nullable WizLightingDiscoveryService getDiscoveryService() {
         return this.wizlightingDiscoveryService;
+    }
+    
+    @Override
+    public NetworkAddressService getNetworkAddressService() {
+    	return this.networkAddressService;
     }
 }

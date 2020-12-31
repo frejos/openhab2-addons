@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.wizlighting.internal.utils;
 
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.rmi.UnknownHostException;
@@ -19,16 +20,22 @@ import java.util.Enumeration;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.wizlighting.internal.handler.WizLightingMediatorImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class to perform some network routines.
  *
  * @author Sriram Balakrishnan - Initial contribution
+ * @author Joshua Freeman - Modified to get MAC matching IP 
  *
  */
 @NonNullByDefault
 public final class NetworkUtils {
 
+	private final static Logger logger = LoggerFactory.getLogger(NetworkUtils.class);
+	
     /**
      * Returns the MAC address of the openHAB first network device.
      *
@@ -36,23 +43,48 @@ public final class NetworkUtils {
      * @throws UnknownHostException
      * @throws SocketException
      */
-    public static @Nullable String getMyMacAddress() throws UnknownHostException, SocketException {
-        Enumeration<NetworkInterface> networks = NetworkInterface.getNetworkInterfaces();
-        while (networks.hasMoreElements()) {
+    public static @Nullable String getMyMacAddress(String matchIP) throws UnknownHostException, SocketException {
+    	String macAddress = null;
+        Enumeration<NetworkInterface> networks = NetworkInterface.getNetworkInterfaces();        
+        while (networks.hasMoreElements()) {        	
             @Nullable
             NetworkInterface network = networks.nextElement();
-            byte[] macAddressBytes = network.getHardwareAddress();
-            if (macAddressBytes != null) {
-                StringBuilder macAddressBuilder = new StringBuilder();
-
-                for (int macAddressByteIndex = 0; macAddressByteIndex < macAddressBytes.length; macAddressByteIndex++) {
-                    String macAddressHexByte = String.format("%02X", macAddressBytes[macAddressByteIndex]);
-                    macAddressBuilder.append(macAddressHexByte);
-                }
-                return macAddressBuilder.toString();
+            
+            if (networkMatchesIP(network, matchIP)) {
+            	
+            	macAddress = convertBytesToMACString(network.getHardwareAddress());
+            	break; // Short circuit if we found it
             }
         }
+        
+        logger.debug("Returning MAC address [{}]", macAddress);
 
-        return null;
+        return macAddress;
+    }
+    
+    private static boolean networkMatchesIP(NetworkInterface network, String ip) {
+    	if (network != null && ip != null) {
+        	for ( InterfaceAddress interfaceAddress : network.getInterfaceAddresses() ) {
+        		String hostAddress = interfaceAddress.getAddress().getHostAddress();
+       			logger.trace("Comparing ip [{}] to hostaddress [{}]", ip, hostAddress);
+        		if (ip.equals(hostAddress)) {
+        			logger.trace("Match found.");
+        			return true;
+        		}
+        	}    		
+    	}
+    	
+    	return false;
+    }
+    
+    private static String convertBytesToMACString(byte[] hardwareAddress) {
+    	StringBuilder macAddressBuilder = new StringBuilder();
+        if (hardwareAddress != null) {
+            for (int macAddressByteIndex = 0; macAddressByteIndex < hardwareAddress.length; macAddressByteIndex++) {
+                String macAddressHexByte = String.format("%02X", hardwareAddress[macAddressByteIndex]);
+                macAddressBuilder.append(macAddressHexByte);
+            }
+        }
+        return macAddressBuilder.toString();    	
     }
 }

@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
  * This is the {@link DiscoveryService} for the Wizlighting Items.
  *
  * @author Sriram Balakrishnan - Initial contribution
+ * @author Joshua Freeman - use configured Broadcast address instead of guessing
  *
  */
 @Component(configurationPid = "discovery.wizlighting", service = DiscoveryService.class, immediate = true)
@@ -113,26 +114,27 @@ public class WizLightingDiscoveryService extends AbstractDiscoveryService {
     protected void startScan() {
         DatagramSocket dsocket = null;
         try {
-            RegistrationRequestParam outParam = this.mediator.getRegistrationParams();
-            String outIpReal = outParam.getPhoneIp();
-            String broadcastIp = outIpReal.substring(0, outIpReal.lastIndexOf(".")) + "255";
-            InetAddress address = InetAddress.getByName(broadcastIp);
-            WizLightingRequest request = new WizLightingRequest(WizLightingMethodType.Registration,
-                    this.mediator.getRegistrationParams());
-            request.setId(0);
-
-            byte[] message = this.converter.transformToByteMessage(request);
-            // logger.trace("Raw packet to send: {}", message);
-
-            // Initialize a datagram packet with data and address
-            DatagramPacket packet = new DatagramPacket(message, message.length, address, DEFAULT_BULB_UDP_PORT);
-
-            // Create a datagram socket, send the packet through it, close it.
-            // For discovery we will "fire and forget" and let the mediator take care of the
-            // responses
-            dsocket = new DatagramSocket();
-            dsocket.send(packet);
-            logger.debug("Sent packet to address: {} and port {}", address, DEFAULT_BULB_UDP_PORT);
+            String broadcastIp = this.mediator.getNetworkAddressService().getConfiguredBroadcastAddress();
+            if (broadcastIp != null) {
+	            InetAddress address = InetAddress.getByName(broadcastIp);
+	            WizLightingRequest request = new WizLightingRequest(WizLightingMethodType.Registration,
+	                    this.mediator.getRegistrationParams());
+	            request.setId(0);
+	
+	            byte[] message = this.converter.transformToByteMessage(request);
+	
+	            // Initialize a datagram packet with data and address
+	            DatagramPacket packet = new DatagramPacket(message, message.length, address, DEFAULT_BULB_UDP_PORT);
+	
+	            // Create a datagram socket, send the packet through it, close it.
+	            // For discovery we will "fire and forget" and let the mediator take care of the
+	            // responses
+	            dsocket = new DatagramSocket();
+	            dsocket.send(packet);
+	            logger.debug("Broadcast packet to address: {} and port {}", address, DEFAULT_BULB_UDP_PORT);
+            } else {
+            	logger.warn("No broadcast address was configured or discovered! No broadcast sent.");
+            }
         } catch (IOException exception) {
             logger.debug("Something wrong happened when broadcasting the packet to port {}... msg: {}",
                     DEFAULT_BULB_UDP_PORT, exception.getMessage());
