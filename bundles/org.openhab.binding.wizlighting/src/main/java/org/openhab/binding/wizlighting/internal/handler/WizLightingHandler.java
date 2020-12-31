@@ -467,42 +467,41 @@ public class WizLightingHandler extends BaseThingHandler {
             logger.trace("Light is off");
             updateState(CHANNEL_COLOR, HSBType.BLACK);
             updateState(CHANNEL_DIMMING, PercentType.ZERO);
+            updateState(CHANNEL_TEMPERATURE, PercentType.ZERO);
             updateState(CHANNEL_SWITCH_STATE, OnOffType.OFF);
         } else {
+        	updateState(CHANNEL_DIMMING, new PercentType(receivedParam.dimming));
+        	updateState(CHANNEL_SWITCH_STATE, OnOffType.ON);        	
             switch (receivedParam.getColorMode()) {
                 case RGBMode:
                     logger.trace("Received color values - R: {} G: {} B: {} W: {} C: {} Dimming: {}", receivedParam.r,
                             receivedParam.g, receivedParam.b, receivedParam.w, receivedParam.c, receivedParam.dimming);
                     logger.trace("Translated to HSBValues {}", receivedParam.getHSBColor());
+                    
                     updateState(CHANNEL_COLOR, receivedParam.getHSBColor());
-                    updateState(CHANNEL_TEMPERATURE, new PercentType(50));
-                    updateState(CHANNEL_DIMMING, new PercentType(receivedParam.dimming));
-                    updateState(CHANNEL_SWITCH_STATE, OnOffType.ON);
+                    updateState(CHANNEL_TEMPERATURE, new PercentType(50));                    
                     break;
                 case CTMode:
                     // update color temperature channel
                     logger.trace("Received color temperature: {} ({}%)", receivedParam.temp,
                             receivedParam.getTemperaturePercent());
+                    
                     updateState(CHANNEL_COLOR, new HSBType(new DecimalType(0), new PercentType(0),
                             new PercentType(receivedParam.getDimming())));
                     updateState(CHANNEL_TEMPERATURE, receivedParam.getTemperaturePercent());
-                    updateState(CHANNEL_DIMMING, new PercentType(receivedParam.dimming));
-                    updateState(CHANNEL_SWITCH_STATE, OnOffType.ON);
+                    break;
                 case SingleColorMode:
                     updateState(CHANNEL_COLOR, new HSBType(new DecimalType(0), new PercentType(0),
                             new PercentType(receivedParam.getDimming())));
                     updateState(CHANNEL_TEMPERATURE, new PercentType(50));
-                    updateState(CHANNEL_DIMMING, new PercentType(receivedParam.dimming));
-                    updateState(CHANNEL_SWITCH_STATE, OnOffType.ON);
+                    break;
             }
         }
 
         // update scene channel
-        if (receivedParam.sceneId > 0) {
-            logger.trace("Received scene: {} ({})", receivedParam.sceneId,
-                    WizLightingLightMode.getNameFromModeId(receivedParam.sceneId));
-            updateState(CHANNEL_LIGHT_MODE, new StringType(String.valueOf(receivedParam.sceneId)));
-        }
+        logger.trace("Received scene: {} ({})", receivedParam.sceneId,
+                WizLightingLightMode.getNameFromModeId(receivedParam.sceneId));
+        updateState(CHANNEL_LIGHT_MODE, new StringType(String.valueOf(receivedParam.sceneId)));
 
         // update speed channel
         logger.trace("Received scene speed: {}", receivedParam.speed);
@@ -584,7 +583,9 @@ public class WizLightingHandler extends BaseThingHandler {
         if (response != null) {
             boolean setSucceeded = response.getResultSuccess();
             if (setSucceeded) {
-                updateTimestamps();
+                // can't process this response it doens't have a syncstate, so request updated state
+            	// let the getPilot response update the timestamps
+            	getPilot();
                 return setSucceeded;
             }
         }
