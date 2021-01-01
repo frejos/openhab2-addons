@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * This is the {@link DiscoveryService} for the Wizlighting Items.
  *
  * @author Sriram Balakrishnan - Initial contribution
- * @author Joshua Freeman - use configured Broadcast address instead of guessing
+ * @author Joshua Freeman - use configured Broadcast address instead of guessing, discovery of plugs
  *
  */
 @Component(configurationPid = "discovery.wizlighting", service = DiscoveryService.class, immediate = true)
@@ -174,24 +174,28 @@ public class WizLightingDiscoveryService extends AbstractDiscoveryService {
         if (configResponse != null) {
             SystemConfigResult discoveredBulbConfig = configResponse.getSystemConfigResults();
             if (discoveredBulbConfig != null) {
-                String discoveredModel = discoveredBulbConfig.moduleName;
+                String discoveredModel = discoveredBulbConfig.moduleName.toUpperCase();
                 logger.trace("Returned model from discovered bulb at {}: {}", lightIpAddress, discoveredModel);
 
                 // We'll try to key off "TW" for tunable white
-                if (discoveredModel.contains("TW")) {
+                if (discoveredModel.contains("SOCKET")) {
+                    thisBulbType = THING_TYPE_WIZ_SMART_PLUG;
+                    thisBulbLabel = "WiZ Smart Plug at " + lightIpAddress;
+                    newThingId = new ThingUID(thisBulbType, lightMacAddress);
+                    logger.trace("New device appears to be a smart plug and will be given the UUID: {}", newThingId);
+                	
+                } else if (discoveredModel.contains("TW")) {
                     thisBulbType = THING_TYPE_WIZ_TUNABLE_BULB;
                     thisBulbLabel = "WiZ Tunable White Bulb at " + lightIpAddress;
                     newThingId = new ThingUID(thisBulbType, lightMacAddress);
-                    logger.trace("New bulb appears to be a tunable white bulb and will be given the UUID: {}",
-                            newThingId);
+                    logger.trace("New bulb appears to be a tunable white bulb and will be given the UUID: {}", newThingId);
 
                     // We key off "RGB" for color bulbs
                 } else if (!discoveredModel.contains("RGB")) {
                     thisBulbType = THING_TYPE_WIZ_DIMMABLE_BULB;
                     thisBulbLabel = "WiZ Dimmable White Bulb at " + lightIpAddress;
                     newThingId = new ThingUID(thisBulbType, lightMacAddress);
-                    logger.trace(
-                            "New bulb appears not to be either tunable white bulb or full color and will be called dimmable only and given the UUID: {}",
+                    logger.trace("New bulb appears not to be either tunable white bulb or full color and will be called dimmable only and given the UUID: {}",
                             newThingId);
                 }
 

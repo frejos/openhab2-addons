@@ -24,6 +24,7 @@ import org.openhab.core.thing.ThingTypeUID;
  * are used across the whole binding.
  *
  * @author Sriram Balakrishnan - Initial contribution
+ * @author Joshua Freeman - update version
  */
 @NonNullByDefault
 public class WizLightingBindingConstants {
@@ -32,7 +33,7 @@ public class WizLightingBindingConstants {
      * The binding id.
      */
     public static final String BINDING_ID = "wizlighting";
-    public static final String CURRENT_BINDING_VERSION = "v0.02.19";
+    public static final String CURRENT_BINDING_VERSION = "v0.03.03";
 
     /**
      * List of all Thing Type UIDs.
