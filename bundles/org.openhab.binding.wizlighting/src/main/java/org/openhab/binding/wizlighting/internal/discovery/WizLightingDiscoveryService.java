@@ -177,13 +177,15 @@ public class WizLightingDiscoveryService extends AbstractDiscoveryService {
                 String discoveredModel = discoveredBulbConfig.moduleName.toUpperCase();
                 logger.trace("Returned model from discovered bulb at {}: {}", lightIpAddress, discoveredModel);
 
-                // We'll try to key off "TW" for tunable white
+                // “moduleName”:“ESP10_SOCKET_06” confirmed example module name for Wiz Smart Plug
+                // Check for "SOCKET" this seems safe based on other naming conventions observed
                 if (discoveredModel.contains("SOCKET")) {
                     thisBulbType = THING_TYPE_WIZ_SMART_PLUG;
                     thisBulbLabel = "WiZ Smart Plug at " + lightIpAddress;
                     newThingId = new ThingUID(thisBulbType, lightMacAddress);
                     logger.trace("New device appears to be a smart plug and will be given the UUID: {}", newThingId);
-                	
+
+                    // We'll try to key off "TW" for tunable white                    
                 } else if (discoveredModel.contains("TW")) {
                     thisBulbType = THING_TYPE_WIZ_TUNABLE_BULB;
                     thisBulbLabel = "WiZ Tunable White Bulb at " + lightIpAddress;
